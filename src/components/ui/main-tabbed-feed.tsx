@@ -13,6 +13,8 @@ interface Post {
   board_slug: string
   board_name: string
   author_name: string
+  author_username?: string | null
+  is_anonymous?: boolean
 }
 
 interface MainTabbedFeedProps {
@@ -136,10 +138,16 @@ export default function MainTabbedFeed({ initialPosts }: MainTabbedFeedProps) {
                   )}
                 </div>
 
-                <div className="flex items-center gap-4 shrink-0 pl-4 text-[#94A3B8]">
-                  <span className="truncate max-w-[80px] font-medium text-[#5B6472] dark:text-[#94A3B8]">
-                    {post.author_name}
-                  </span>
+                <div className="flex items-center gap-4 shrink-0 pl-4 text-[#94A3B8] relative z-20">
+                  {post.author_username && !post.is_anonymous ? (
+                    <Link href={`/u/${post.author_username}`} className="font-bold text-[#5B6472] dark:text-[#94A3B8] hover:text-[#7C3AED] dark:hover:text-[#A78BFA] transition hover:underline">
+                      {post.author_name}
+                    </Link>
+                  ) : (
+                    <span className="truncate max-w-[80px] font-medium text-[#5B6472] dark:text-[#94A3B8]">
+                      {post.author_name}
+                    </span>
+                  )}
                   <span className="w-12 text-right font-medium">
                     {formatTime(post.created_at)}
                   </span>

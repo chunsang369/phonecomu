@@ -85,19 +85,19 @@ export default async function PostDetailPage({ params }: PageProps) {
     }
   }
 
-  // AI 연관 추천 게시글 모조 데이터
-  const relatedAiPosts = [
-    { title: '갤럭시 자급제 공시지원금 인상 기사 분석', date: '2026.06.28', author: '대란예언가' },
-    { title: '제휴카드는 상술일까 아닐까?', date: '2026.06.30', author: '호갱탈출러' },
-    { title: '아이폰 17 기기변경 당일 징 30만원 스팟 후기', date: '2026.07.01', author: '아이폰기변' },
-    { title: '7월 번호이동 보조금 스팟 단가 실시간 예측표', date: '2026.07.01', author: '단가분석봇' },
-    { title: '신도림 테크노마트 은어 및 대화 노하우 공유', date: '2026.06.27', author: '성지마스터' }
-  ]
+  // 5. 작성자의 다른 최신글 조회 (익명이 아닐 때만)
+  let authorRecentPosts: any[] = []
+  if (!post.is_anonymous && post.author_id) {
+    const { getPostsByAuthor } = await import('@/lib/queries/profile')
+    const authorPosts = await getPostsByAuthor(post.author_id, 5)
+    authorRecentPosts = authorPosts.filter((p: any) => p.id !== post.id)
+  }
 
-  // 작성자의 다른 최신 게시글 모조
-  const authorRecentPosts = [
-    { title: '이번 달 최신 공시지원금 변동 일람', time: '14:17' }
-  ]
+  // 6. 연관 추천 게시글 조회 (실제 인기글 연동)
+  const { data: trendingRaw } = await supabase.rpc('trending_posts', { days: 14, max_rows: 5 })
+  const relatedAiPosts = (trendingRaw || [])
+    .filter((p: any) => p.id !== post.id)
+    .slice(0, 4)
 
   return (
     <div className="min-h-screen bg-[#F4F6F9] dark:bg-[#0B0F19] text-[#1E293B] dark:text-[#E2E8F0] font-sans antialiased pb-12">
@@ -193,9 +193,21 @@ export default async function PostDetailPage({ params }: PageProps) {
               </div>
               <div>
                 <div className="flex items-center gap-1 font-bold">
-                  <span className="text-slate-800 dark:text-slate-200">
-                    {post.is_anonymous ? (post.anon_tag || '익명') : (post.author?.display_name || '성지회원')}
-                  </span>
+                  {post.is_anonymous ? (
+                    <span className="text-slate-800 dark:text-slate-200">
+                      {post.anon_tag || '익명'}
+                    </span>
+                  ) : (
+                    post.author?.username ? (
+                      <Link href={`/u/${post.author.username}`} className="text-[#7C3AED] dark:text-[#A78BFA] hover:underline font-extrabold transition">
+                        {post.author?.display_name || '성지회원'}
+                      </Link>
+                    ) : (
+                      <span className="text-slate-800 dark:text-slate-200">
+                        {post.author?.display_name || '성지회원'}
+                      </span>
+                    )
+                  )}
                   {!post.is_anonymous && (
                     <span className="text-[9px] text-[#7C3AED] font-black">★</span>
                   )}
@@ -254,7 +266,7 @@ export default async function PostDetailPage({ params }: PageProps) {
             {/* 작성자 및 최신 게시글 2열 박스 */}
             <div className="border border-[#E2E8F0] p-5 rounded-2xl flex flex-col md:flex-row gap-5 dark:border-[#1F2937]">
               {/* 좌측: 작성자 이용자 정보 */}
-              <div className="md:w-1/2 flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className={`${(!post.is_anonymous && authorRecentPosts.length > 0) ? 'md:w-1/2' : 'w-full'} flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800`}>
                 <div className="h-14 w-14 rounded-full bg-purple-100 text-[18px] text-[#7C3AED] flex items-center justify-center font-bold border border-purple-200 dark:bg-slate-700 dark:text-[#A78BFA] dark:border-slate-600 shrink-0">
                   {post.is_anonymous ? '익' : (post.author?.display_name ? post.author.display_name.substring(0, 1) : 'M')}
                 </div>
@@ -272,19 +284,28 @@ export default async function PostDetailPage({ params }: PageProps) {
               </div>
 
               {/* 우측: 작성자명의 최신 게시글 리스트 */}
-              <div className="md:w-1/2 space-y-2">
-                <h5 className="text-[11px] font-black text-slate-800 dark:text-slate-100 pb-2 border-b border-slate-100 dark:border-[#1F2937]">
-                  {post.is_anonymous ? (post.anon_tag || '익명') : (post.author?.display_name || '성지회원')}님의 최신 게시글
-                </h5>
-                <ul className="text-[10px] space-y-2">
-                  {authorRecentPosts.map((ap, idx) => (
-                    <li key={idx} className="flex justify-between font-bold text-slate-600 dark:text-slate-300 hover:text-[#7C3AED] cursor-pointer">
-                      <span className="truncate pr-4">{ap.title}</span>
-                      <span className="shrink-0 text-slate-400">{ap.time}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {!post.is_anonymous && authorRecentPosts.length > 0 && (
+                <div className="md:w-1/2 space-y-2">
+                  <h5 className="text-[11px] font-black text-slate-800 dark:text-slate-100 pb-2 border-b border-slate-100 dark:border-[#1F2937]">
+                    {post.author?.display_name || '성지회원'}님의 최신 게시글
+                  </h5>
+                  <ul className="text-[10px] space-y-2">
+                    {authorRecentPosts.map((ap) => (
+                      <li key={ap.id}>
+                        <Link
+                          href={`/board/free/${ap.id}`}
+                          className="flex justify-between font-bold text-slate-600 dark:text-slate-300 hover:text-[#7C3AED] transition"
+                        >
+                          <span className="truncate pr-4">{ap.title}</span>
+                          <span className="shrink-0 text-slate-400">
+                            {new Date(ap.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }).replace(/ /g, '')}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
           </article>
@@ -303,30 +324,32 @@ export default async function PostDetailPage({ params }: PageProps) {
           </div>
 
           {/* AI 추천 연관글 위젯 */}
-          <div className="rounded-2xl border border-[#E5E8EC] bg-white p-6 shadow-sm dark:bg-[#111827] dark:border-[#1F2937] space-y-4">
-            <h3 className="text-xs font-black text-slate-800 dark:text-white border-b border-slate-100 pb-3 dark:border-[#1F2937] flex items-center gap-1">
-              <Sparkles className="h-4 w-4 text-[#7C3AED]" />
-              <span>AI가 비슷한 글을 추천해요!</span>
-            </h3>
+          {relatedAiPosts.length > 0 && (
+            <div className="rounded-2xl border border-[#E5E8EC] bg-white p-6 shadow-sm dark:bg-[#111827] dark:border-[#1F2937] space-y-4">
+              <h3 className="text-xs font-black text-slate-800 dark:text-white border-b border-slate-100 pb-3 dark:border-[#1F2937] flex items-center gap-1">
+                <Sparkles className="h-4 w-4 text-[#7C3AED]" />
+                <span>AI가 비슷한 글을 추천해요!</span>
+              </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {relatedAiPosts.map((rp, idx) => (
-                <div key={idx} className="p-3 border border-[#F1F5F9] rounded-xl hover:border-[#7C3AED] transition dark:border-slate-800 flex items-start gap-2">
-                  <div className="h-5 w-5 bg-purple-50 text-[9px] text-[#7C3AED] flex items-center justify-center font-bold rounded dark:bg-slate-800 dark:text-[#A78BFA] shrink-0 mt-0.5">
-                    TIP
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {relatedAiPosts.map((rp: any) => (
+                  <div key={rp.id} className="p-3 border border-[#F1F5F9] rounded-xl hover:border-[#7C3AED] transition dark:border-slate-800 flex items-start gap-2">
+                    <div className="h-5 w-5 bg-purple-50 text-[9px] text-[#7C3AED] flex items-center justify-center font-bold rounded dark:bg-slate-800 dark:text-[#A78BFA] shrink-0 mt-0.5">
+                      TIP
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/board/free/${rp.id}`}
+                        className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate hover:text-[#7C3AED] transition block"
+                      >
+                        {rp.title}
+                      </Link>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate hover:text-[#7C3AED] cursor-pointer">
-                      {rp.title}
-                    </p>
-                    <p className="text-[9px] text-slate-400 mt-1">
-                      {rp.date} • {rp.author}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 게시글 하단의 게시판 목록 리스트 테이블 연동! */}
           <div className="rounded-2xl border border-[#E5E8EC] bg-white shadow-sm dark:bg-[#111827] dark:border-[#1F2937] overflow-hidden p-6 space-y-4">

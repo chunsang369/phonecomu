@@ -142,11 +142,21 @@ export default function CommentSection({ postId, comments, currentUserId }: Comm
           <div className="flex-1 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                {comment.is_anonymous ? (
+                {comment.is_secret ? (
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                    비밀댓글
+                  </span>
+                ) : comment.is_anonymous ? (
                   <AnonBadge tag={comment.anon_tag || '익명'} />
                 ) : (
                   <div className="flex items-center gap-1 text-sm font-semibold text-[#1A1D24] dark:text-[#F1F5F9]">
-                    <span>{comment.author?.display_name || '탈퇴한 사용자'}</span>
+                    {comment.author?.username ? (
+                      <Link href={`/u/${comment.author.username}`} className="text-[#2563EB] dark:text-[#38BDF8] hover:underline font-extrabold transition">
+                        {comment.author?.display_name || '탈퇴한 사용자'}
+                      </Link>
+                    ) : (
+                      <span>{comment.author?.display_name || '탈퇴한 사용자'}</span>
+                    )}
                     {comment.author && (
                       <span className="rounded bg-[#EFF4FF] px-1.5 py-0.5 text-[10px] font-bold text-[#2563EB] dark:bg-slate-800 dark:text-[#38BDF8]">
                         Lv.{comment.author.level}

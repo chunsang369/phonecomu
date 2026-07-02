@@ -1,0 +1,27 @@
+# 감사 패치 이식 작업 목록
+
+- [x] 로컬 supabase/migrations 디렉토리에 20260702 마이그레이션 sql 파일 생성
+- [x] 원격 Supabase DB에 20260702_fix_security_and_views.sql SQL 문구 반영 (사용자 실행 권장)
+- [x] 파일 교체 및 신설 진행
+  - [x] src/lib/queries/comment.ts (교체)
+  - [x] src/lib/queries/profile.ts (신규)
+  - [x] src/app/(public)/search/page.tsx (신규)
+  - [x] src/app/(public)/u/[username]/page.tsx (신규)
+  - [x] src/components/ui/trending-keywords.tsx (교체)
+  - [x] src/components/ui/keyword-roller.tsx (신규)
+- [x] AnonBadge 컴포넌트 tag prop 시그니처 정합성 확인 및 검색 페이지 보정
+- [x] 홈 화면(src/app/page.tsx) 정직화
+  - [x] 꿀팁 카드의 가짜 작성자 및 가짜 날짜 제거
+  - [x] "[통신 3사 실시간 연동]" 문구 삭제
+  - [x] 꿀팁 카드 영역을 정보(info) 게시판 실시간 글 데이터 연동 및 미노출 예외 처리
+  - [x] 헤더 검색바의 action을 /search로 연동
+- [x] 게시글 목록, 피드 및 댓글 영역의 작성자 닉네임을 유저 프로필(/u/[username]) 링크로 전체 매핑
+- [x] 검증 수행 (DoD 통과 여부 및 로그 수집)
+  - [x] node verify_penetration.js 수행 및 5개 항목 성공 확인
+  - [x] 익명 댓글 글 상세 페이지 렌더링 확인
+  - [x] 통합 검색 페이지(/search) 결과 노출 및 연결 확인
+  - [x] 프로필 페이지(/u/[username]) 신뢰지수 검출 및 익명글 마스킹 여부 확인
+  - [x] 홈 화면 상단 실시간 인기글 롤링 확인
+  - [x] 비밀댓글 및 익명 프로필 링크 우회 버그 핫픽스
+  - [x] git grep을 이용한 가짜 텍스트 코드 수준 100% 완전 소거 검증
+  - [x] 페이지 소스 보기 SSR HTML 마크업 검출 확인

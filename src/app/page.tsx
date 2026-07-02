@@ -59,6 +59,10 @@ export default async function Home() {
   // 자유, 정보, 익명, 좌표, 질문/답변 게시판 필터링 (free, info, anonymous, coordinate, qna)
   const boards = allBoards.filter(b => ['free', 'info', 'anonymous', 'coordinate', 'qna'].includes(b.slug))
 
+  // 5. 오늘 봐야 할 휴대폰 꿀팁 (info 게시판 실데이터 연동)
+  const infoBoard = allBoards.find(b => b.slug === 'info')
+  const tipPosts = infoBoard ? await getPostsByBoard(infoBoard.id, 4) : []
+
   // 3. 통합 피드 조립
   const allPostsPromises = boards.map(async (b) => {
     const posts = await getPostsByBoard(b.id, 10)
@@ -70,7 +74,9 @@ export default async function Home() {
       upvotes: p.upvotes,
       board_slug: b.slug,
       board_name: b.name,
-      author_name: p.is_anonymous ? (p.anon_tag || '익명') : (p.author?.display_name || '성지멤버')
+      author_name: p.is_anonymous ? (p.anon_tag || '익명') : (p.author?.display_name || '성지멤버'),
+      author_username: p.is_anonymous ? null : p.author_username,
+      is_anonymous: p.is_anonymous
     }))
   })
   
@@ -120,14 +126,17 @@ export default async function Home() {
 
           <div className="flex items-center gap-4 shrink-0">
             {/* 돋보기 아이콘이 들어간 모던 인풋창 */}
-            <div className="relative max-w-[180px] sm:max-w-xs w-full">
+            <form action="/search" method="get" className="relative max-w-[180px] sm:max-w-xs w-full">
               <input
                 type="text"
+                name="q"
                 placeholder="검색"
                 className="w-full rounded border border-[#CBD5E1] bg-white pl-3 pr-8 py-1.5 text-xs focus:border-[#7C3AED] focus:outline-none dark:border-[#374151] dark:bg-[#1F2937] dark:text-[#F3F4F6]"
               />
-              <Search className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-[#94A3B8] cursor-pointer" />
-            </div>
+              <button type="submit" className="absolute right-2.5 top-2.5">
+                <Search className="h-3.5 w-3.5 text-[#94A3B8] cursor-pointer" />
+              </button>
+            </form>
 
             {user ? (
               <Link
@@ -325,81 +334,58 @@ export default async function Home() {
         </div>
 
         {/* 3. 오늘 봐야 할 게시글 (휴대폰 썸네일 피드) */}
-        <div className="rounded-2xl bg-[#1E293B] p-6 shadow-sm dark:bg-[#0F172A] space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h3 className="text-sm font-black text-white flex items-center gap-1.5">
-              <Megaphone className="h-4 w-4 text-[#A78BFA]" />
-              <span>오늘 봐야 할 휴대폰 꿀팁</span>
-            </h3>
-            <span className="text-[10px] font-bold text-slate-400">
-              &lt; 1 / 5 &gt;
-            </span>
+        {tipPosts.length > 0 && (
+          <div className="rounded-2xl bg-[#1E293B] p-6 shadow-sm dark:bg-[#0F172A] space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-black text-white flex items-center gap-1.5">
+                <Megaphone className="h-4 w-4 text-[#A78BFA]" />
+                <span>오늘 봐야 할 휴대폰 꿀팁</span>
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+              {tipPosts.map((post) => {
+                const board = allBoards.find(b => b.id === post.board_id)
+                const authorUsername = post.author?.username
+                
+                return (
+                  <div key={post.id} className="group relative overflow-hidden rounded-xl bg-slate-800 border border-slate-700/60 p-4 hover:border-[#7C3AED] transition-all hover:-translate-y-0.5 duration-300">
+                    <Link href={`/board/${board?.slug ?? 'info'}/${post.id}`} className="absolute inset-0 z-10" />
+                    
+                    <div className="aspect-[16/9] w-full rounded-lg bg-gradient-to-br from-indigo-900 to-purple-800 mb-3 flex items-center justify-center font-bold text-indigo-200 text-xs uppercase tracking-wider">
+                      {board?.name ?? '꿀팁'}
+                    </div>
+                    
+                    <h4 className="text-xs font-bold text-white group-hover:text-[#A78BFA] transition line-clamp-2 leading-snug">
+                      {post.title}
+                    </h4>
+                    
+                    <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400 relative z-20">
+                      <span className="h-4 w-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-white">
+                        {post.is_anonymous ? 'A' : (post.author?.display_name || 'U').substring(0, 1)}
+                      </span>
+                      
+                      {post.is_anonymous ? (
+                        <span>{post.anon_tag || '익명'}</span>
+                      ) : (
+                        authorUsername ? (
+                          <Link href={`/u/${authorUsername}`} className="hover:text-white hover:underline transition">
+                            {post.author?.display_name || '회원'}
+                          </Link>
+                        ) : (
+                          <span>{post.author?.display_name || '회원'}</span>
+                        )
+                      )}
+                      
+                      <span>•</span>
+                      <span>{new Date(post.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-            
-            <div className="group relative overflow-hidden rounded-xl bg-slate-800 border border-slate-700/60 p-4 hover:border-[#7C3AED] transition-all hover:-translate-y-0.5 duration-300">
-              <div className="aspect-[16/9] w-full rounded-lg bg-gradient-to-br from-indigo-900 to-purple-800 mb-3 flex items-center justify-center font-bold text-indigo-200 text-xs uppercase tracking-wider">
-                성지 구매 가이드
-              </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-[#A78BFA] transition line-clamp-2 leading-snug">
-                호갱 탈출을 위한 휴대폰 성지 구매 절차 A to Z 가이드북
-              </h4>
-              <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400">
-                <span className="h-4 w-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-white">G</span>
-                <span>성지가이드</span>
-                <span>•</span>
-                <span>6월 28일</span>
-              </div>
-            </div>
-
-            <div className="group relative overflow-hidden rounded-xl bg-slate-800 border border-slate-700/60 p-4 hover:border-[#7C3AED] transition-all hover:-translate-y-0.5 duration-300">
-              <div className="aspect-[16/9] w-full rounded-lg bg-gradient-to-br from-red-900 to-orange-800 mb-3 flex items-center justify-center font-bold text-red-200 text-xs uppercase tracking-wider">
-                초성 은어 사전
-              </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-[#A78BFA] transition line-clamp-2 leading-snug">
-                성지 단가표 은어 및 카카오톡 대란방 필수 초성 약어 사전
-              </h4>
-              <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400">
-                <span className="h-4 w-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-white">S</span>
-                <span>성지분석기</span>
-                <span>•</span>
-                <span>7월 01일</span>
-              </div>
-            </div>
-
-            <div className="group relative overflow-hidden rounded-xl bg-slate-800 border border-slate-700/60 p-4 hover:border-[#7C3AED] transition-all hover:-translate-y-0.5 duration-300">
-              <div className="aspect-[16/9] w-full rounded-lg bg-gradient-to-br from-green-900 to-emerald-800 mb-3 flex items-center justify-center font-bold text-green-200 text-xs uppercase tracking-wider">
-                공시 연동 표
-              </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-[#A78BFA] transition line-clamp-2 leading-snug">
-                [통신 3사 실시간 연동] 7월 모델별 공시지원금 변동 리스트
-              </h4>
-              <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400">
-                <span className="h-4 w-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-white">T</span>
-                <span>통신동향봇</span>
-                <span>•</span>
-                <span>6월 30일</span>
-              </div>
-            </div>
-
-            <div className="group relative overflow-hidden rounded-xl bg-slate-800 border border-slate-700/60 p-4 hover:border-[#7C3AED] transition-all hover:-translate-y-0.5 duration-300">
-              <div className="aspect-[16/9] w-full rounded-lg bg-gradient-to-br from-cyan-900 to-blue-800 mb-3 flex items-center justify-center font-bold text-cyan-200 text-xs uppercase tracking-wider">
-                제휴카드 분석
-              </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-[#A78BFA] transition line-clamp-2 leading-snug">
-                제휴카드는 상술일까 아닐까? 실질 할인율과 필수 유의사항 정리
-              </h4>
-              <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400">
-                <span className="h-4 w-4 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-bold text-white">H</span>
-                <span>호갱탈출러</span>
-                <span>•</span>
-                <span>6월 30일</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
+        )}
 
       </main>
       <Footer />

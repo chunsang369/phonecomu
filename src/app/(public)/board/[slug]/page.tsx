@@ -222,13 +222,25 @@ export default async function BoardPage({ params }: PageProps) {
                     <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 text-[11px] text-[#828B9C] dark:text-[#94A3B8]">
                       
                       {/* 작성자 아바타 칩 */}
-                      <div className="flex items-center gap-1.5 font-bold">
+                      <div className="flex items-center gap-1.5 font-bold relative z-20">
                         <div className="h-4.5 w-4.5 rounded-full bg-purple-50 text-[9px] text-[#7C3AED] flex items-center justify-center font-bold border border-purple-100 dark:bg-slate-800 dark:text-[#A78BFA] dark:border-slate-700">
                           {post.is_anonymous ? '익' : (post.author?.display_name ? post.author.display_name.substring(0, 1) : 'M')}
                         </div>
-                        <span className="text-slate-700 dark:text-slate-300">
-                          {post.is_anonymous ? (post.anon_tag || '익명') : (post.author?.display_name || '성지회원')}
-                        </span>
+                        {post.is_anonymous ? (
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {post.anon_tag || '익명'}
+                          </span>
+                        ) : (
+                          post.author?.username ? (
+                            <Link href={`/u/${post.author.username}`} className="text-[#7C3AED] dark:text-[#A78BFA] hover:underline font-extrabold transition">
+                              {post.author?.display_name || '성지회원'}
+                            </Link>
+                          ) : (
+                            <span className="text-slate-700 dark:text-slate-300">
+                              {post.author?.display_name || '성지회원'}
+                            </span>
+                          )
+                        )}
                         {!post.is_anonymous && (
                           <span className="text-[9px] text-[#7C3AED] font-black">★</span>
                         )}

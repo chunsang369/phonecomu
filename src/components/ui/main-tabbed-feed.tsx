@@ -28,7 +28,7 @@ const TABS = [
   { id: "qna", name: "질문답변" },
   { id: "free", name: "자유" },
   { id: "anonymous", name: "익명" },
-  { id: "coordinate", name: "시세표" },
+  { id: "coordinate", name: "진짜성지" },
 ]
 
 export default function MainTabbedFeed({ initialPosts }: MainTabbedFeedProps) {

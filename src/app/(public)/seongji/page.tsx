@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { SquarePen, ShieldCheck, TriangleAlert } from 'lucide-react'
+import { SquarePen, ShieldCheck, TriangleAlert, MapPin, ChevronRight } from 'lucide-react'
 import SiteHeader from '@/components/layout/site-header'
 import Footer from '@/components/ui/footer'
 import AdSlot from '@/components/ads/ad-slot'
@@ -104,6 +104,24 @@ export default async function SeongjiPage({ searchParams }: { searchParams: Prom
               ))}
             </nav>
           </section>
+
+          {/* 지역별 진짜성지 게시판 이동 */}
+          <Link
+            href="/board/coordinate"
+            className="group flex items-center gap-3 rounded-lg bg-[#5707EB] px-5 py-4 text-white transition hover:bg-[#4E07D2] sm:gap-4 sm:px-[30px] sm:py-5 dark:bg-[#4E07D2]"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+              <MapPin className="h-6 w-6" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[16px] font-bold sm:text-[18px]">지역별 진짜 휴대폰 성지를 만나고 싶다면?</span>
+              <span className="mt-0.5 block truncate text-[13px] text-white/75">지역별 진짜성지 게시판에서 동네 성지 정보와 개통 조건을 확인하세요</span>
+            </span>
+            <span className="flex shrink-0 items-center gap-1 rounded-lg bg-white px-3 py-2 text-[14px] font-bold text-[#5707EB] sm:px-4">
+              <span className="hidden sm:inline">바로가기</span>
+              <ChevronRight className="h-4 w-4" />
+            </span>
+          </Link>
 
           {/* 성지 순위 */}
           <section className="rounded-lg bg-white px-5 py-6 sm:px-[30px] dark:bg-[#111827]">

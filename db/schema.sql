@@ -146,7 +146,7 @@ insert into boards (slug, name, type, allow_anonymous, read_min_level, write_min
   ('anonymous',  '익명게시판',       'anonymous',  true,  0,  1, '통신 업계 속사정과 솔직한 이야기를 나누는 익명 공간', 10),
   ('free',       '자유게시판',       'free',       false, 0,  1, '휴대폰과 일상 이야기를 자유롭게 나누는 공간', 20),
   ('info',       '휴대폰정보나눔',   'info',       false, 0,  1, '공시지원금·선택약정·번호이동 정보와 꿀팁 공유', 30),
-  ('coordinate', '지역별 시세표',     'coordinate', false, 0,  1, '지역별 휴대폰 시세와 조건 공유', 35),
+  ('coordinate', '지역별 진짜성지',   'coordinate', false, 0,  1, '지역별 진짜 휴대폰 성지 정보와 개통 조건 공유', 35),
   ('qna',        '질문/답변게시판',   'qna',        false, 0,  1, '휴대폰 개통·요금제 질문과 답변', 38),
   ('notice',     '공지사항',         'notice',     false, 0,  5, '운영 공지사항', 40),
   ('inquiry',    '문의게시판',       'inquiry',    false, 10, 1, '1:1 비밀 문의게시판입니다. 본인이 작성한 글만 보입니다.', 99)

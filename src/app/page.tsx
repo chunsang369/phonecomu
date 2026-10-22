@@ -16,7 +16,7 @@ const SHORT: Record<string, string> = {
   free: '자유',
   anonymous: '익명',
   qna: '질문답변',
-  coordinate: '시세표',
+  coordinate: '진짜성지',
   notice: '공지',
   review: '성지후기',
 }
@@ -25,7 +25,7 @@ const SHORT: Record<string, string> = {
 const QUICK_LINKS = [
   { href: '/seongji', label: '성지 평가', Icon: Store },
   { href: '/calculator', label: '요금계산기', Icon: Calculator },
-  { href: '/board/coordinate', label: '지역별 시세표', Icon: MapPin },
+  { href: '/board/coordinate', label: '지역별 진짜성지', Icon: MapPin },
   { href: '/board/qna', label: '질문하기', Icon: MessageCircle },
   { href: '/board/anonymous', label: '익명 수다', Icon: EyeOff },
   { href: '/board/notice', label: '공지사항', Icon: Megaphone },

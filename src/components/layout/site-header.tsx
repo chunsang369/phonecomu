@@ -18,6 +18,7 @@ const NAV = [
   { key: 'qna', href: '/board/qna', label: '질문답변' },
 ]
 const NAV_ACCENT = [
+  { key: 'seongji', href: '/seongji', label: '성지평가' },
   { key: 'coordinate', href: '/board/coordinate', label: '지역별 시세표' },
   { key: 'calculator', href: '/calculator', label: '요금계산기' },
   { key: 'notice', href: '/board/notice', label: '공지사항' },

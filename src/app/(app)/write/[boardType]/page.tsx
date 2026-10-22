@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getBoardBySlug } from '@/lib/queries/board'
 import { getPostsByBoard } from '@/lib/queries/post'
@@ -25,6 +25,8 @@ function formatListDate(dateStr: string) {
 
 export default async function WritePage({ params }: PageProps) {
   const { boardType } = await params
+  // 성지 평가 후기는 구조화된 후기 폼으로만 작성
+  if (boardType === 'review') redirect('/seongji/write')
   const board = await getBoardBySlug(boardType)
 
   if (!board) {

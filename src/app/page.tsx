@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Calculator, MapPin, MessageCircle, EyeOff, Megaphone, Headset, ChevronRight } from 'lucide-react'
+import { Store, Calculator, MapPin, MessageCircle, EyeOff, Megaphone, ChevronRight } from 'lucide-react'
 import SiteHeader from '@/components/layout/site-header'
 import Footer from '@/components/ui/footer'
 import AdSlot from '@/components/ads/ad-slot'
@@ -18,16 +18,17 @@ const SHORT: Record<string, string> = {
   qna: '질문답변',
   coordinate: '시세표',
   notice: '공지',
+  review: '성지후기',
 }
 
 // 가운데 바로가기 카드 (아이보스: 180×62, 15px bold)
 const QUICK_LINKS = [
+  { href: '/seongji', label: '성지 평가', Icon: Store },
   { href: '/calculator', label: '요금계산기', Icon: Calculator },
   { href: '/board/coordinate', label: '지역별 시세표', Icon: MapPin },
   { href: '/board/qna', label: '질문하기', Icon: MessageCircle },
   { href: '/board/anonymous', label: '익명 수다', Icon: EyeOff },
   { href: '/board/notice', label: '공지사항', Icon: Megaphone },
-  { href: '/support/contact', label: '고객센터', Icon: Headset },
 ]
 
 export default async function Home() {
@@ -37,7 +38,7 @@ export default async function Home() {
   ])
 
   // 통합 피드
-  const boards = allBoards.filter((b) => ['free', 'info', 'anonymous', 'coordinate', 'qna', 'notice'].includes(b.slug))
+  const boards = allBoards.filter((b) => ['free', 'info', 'anonymous', 'coordinate', 'qna', 'notice', 'review'].includes(b.slug))
   const perBoard = await Promise.all(
     boards.map(async (b) =>
       (await getPostsByBoard(b.id, 60)).map((p: PostRow) => ({

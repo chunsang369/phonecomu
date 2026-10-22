@@ -23,6 +23,7 @@ interface MainTabbedFeedProps {
 
 const TABS = [
   { id: "all", name: "지금 인기" },
+  { id: "review", name: "성지후기" },
   { id: "info", name: "정보공유" },
   { id: "qna", name: "질문답변" },
   { id: "free", name: "자유" },

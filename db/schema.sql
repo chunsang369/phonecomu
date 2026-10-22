@@ -151,3 +151,55 @@ insert into boards (slug, name, type, allow_anonymous, read_min_level, write_min
   ('notice',     '공지사항',         'notice',     false, 0,  5, '운영 공지사항', 40),
   ('inquiry',    '문의게시판',       'inquiry',    false, 10, 1, '1:1 비밀 문의게시판입니다. 본인이 작성한 글만 보입니다.', 99)
 on conflict (slug) do nothing;
+
+-- ── 성지 평가 (2026-10-22) ──
+-- 매장은 별칭 + 지역으로만 식별한다(실명·주소·연락처를 공개 본문에 두지 않는 설계 원칙).
+create table if not exists stores (
+  id          uuid primary key default gen_random_uuid(),
+  alias       text not null,
+  region      text not null,            -- 시/도 (서울, 경기 …)
+  district    text not null default '', -- 구/동 등 상세 지역
+  created_by  uuid references profiles(id) on delete set null,
+  status      text not null default 'active' check (status in ('active','hidden')),
+  created_at  timestamptz not null default now()
+);
+create unique index if not exists uq_stores_alias on stores (region, lower(district), lower(alias));
+
+-- 구매 후기(평가): 실제 개통 조건을 구조화해 저장하고, 같은 내용의 게시글(review 게시판)과 연결한다.
+create table if not exists store_reviews (
+  id               uuid primary key default gen_random_uuid(),
+  store_id         uuid not null references stores(id) on delete cascade,
+  post_id          uuid references posts(id) on delete set null,
+  author_id        uuid references profiles(id) on delete set null,
+  carrier          text not null check (carrier in ('SKT','KT','LGU+')),
+  device_name      text not null,
+  device_price     int  not null,        -- 출고가
+  join_type        text not null check (join_type in ('번호이동','기기변경','신규가입')),
+  discount_type    text not null check (discount_type in ('공시지원금','선택약정')),
+  pay_type         text not null check (pay_type in ('현금완납','할부')),
+  device_paid      int  not null,        -- 현금완납가 또는 할부원금
+  install_months   int  not null default 24,
+  plan_price       int  not null,        -- 가입 요금제 월 요금
+  plan_hold_months int  not null default 6,
+  plan_after_price int  not null,        -- 유지 후 변경 요금제 월 요금
+  addon_monthly    int  not null default 0, -- 부가서비스 월 합계
+  addon_months     int  not null default 0,
+  card_required    boolean not null default false,
+  promise          text not null check (promise in ('kept','partial','broken')), -- 약속대로 / 일부 달라짐 / 현장 조건 변경(낚시)
+  rating_price     smallint not null check (rating_price between 1 and 5),
+  rating_service   smallint not null check (rating_service between 1 and 5),
+  rating_trust     smallint not null check (rating_trust between 1 and 5),
+  purchased_on     date not null,
+  real_price       int  not null,        -- 실구매가 환산(기기 실부담 + 숨은 조건 비용) — 작성 시점 계산값
+  hidden_cost      int  not null,        -- 숨은 조건 비용(요금제 유지 차액 + 부가서비스)
+  total_24m        int  not null,        -- 24개월 총 납부액
+  comment          text,
+  status           text not null default 'published',
+  created_at       timestamptz not null default now()
+);
+create index if not exists idx_store_reviews_store on store_reviews (store_id, created_at desc) where status = 'published';
+create index if not exists idx_store_reviews_device on store_reviews (device_name, created_at desc) where status = 'published';
+
+insert into boards (slug, name, type, allow_anonymous, read_min_level, write_min_level, description, sort) values
+  ('review', '성지 평가 후기', 'review', false, 0, 1, '실제 개통 조건과 약속 이행 여부를 남기는 성지 구매 후기', 33)
+on conflict (slug) do nothing;

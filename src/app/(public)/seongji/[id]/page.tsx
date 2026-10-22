@@ -8,8 +8,10 @@ import AdSlot from '@/components/ads/ad-slot'
 import ProfileCard from '@/components/home/profile-card'
 import ReviewCard, { Score } from '@/components/seongji/review-card'
 import { getStore, getStoreReviews } from '@/lib/queries/seongji'
+import JsonLd from '@/components/seo/json-ld'
+import { breadcrumbSchema } from '@/lib/seo/schema'
+import { pageMeta } from '@/lib/seo/metadata'
 
-const SITE = process.env.NEXT_PUBLIC_SITE_NAME ?? '성지평가제'
 const KRW = (n: number) => new Intl.NumberFormat('ko-KR').format(n)
 
 type Props = { params: Promise<{ id: string }> }
@@ -19,11 +21,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const s = await getStore(id)
   if (!s) return { title: '성지를 찾을 수 없습니다' }
   const rate = s.kept_rate == null ? '' : ` · 약속 이행률 ${Math.round(s.kept_rate * 100)}%`
-  return {
-    title: `${s.region} ${s.district} ${s.alias} 성지 후기 ${s.review_count}건${s.avg_total ? ` · 평점 ${s.avg_total}` : ''} | ${SITE}`,
-    description: `${s.region} ${s.district} ${s.alias}의 실제 개통 조건 후기 ${s.review_count}건${rate}. 할부원금·요금제 유지·부가서비스를 반영한 실구매가로 비교하세요.`,
-    alternates: { canonical: `/seongji/${id}` },
-  }
+  const meta = pageMeta({
+    title: `${s.region} ${s.district} ${s.alias} 휴대폰 성지 후기 ${s.review_count}건${s.avg_total ? ` · 평점 ${s.avg_total}` : ''}`.replace(/s+/g, ' '),
+    description: `${s.region} ${s.district} ${s.alias}의 실제 개통 조건 후기 ${s.review_count}건${rate}. 할부원금·요금제 유지·부가서비스를 반영한 실구매가로 비교하세요.`.replace(/s+/g, ' '),
+    path: `/seongji/${id}`,
+  })
+  // 후기가 없는 매장 페이지는 내용이 없어 색인하지 않음 (후기가 쌓이면 자동으로 색인 대상)
+  return s.review_count > 0 ? meta : { ...meta, robots: { index: false, follow: true } }
 }
 
 export default async function StorePage({ params }: Props) {
@@ -39,6 +43,14 @@ export default async function StorePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#F2F4F6] text-[#454545] dark:bg-[#0B0F19] dark:text-[#E2E8F0]">
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: '홈', path: '/' },
+          { name: '성지 평가', path: '/seongji' },
+          { name: `${store.region} 성지`, path: `/seongji?region=${encodeURIComponent(store.region)}` },
+          { name: store.alias, path: `/seongji/${store.id}` },
+        ])}
+      />
       <SiteHeader active="seongji" writeSlug="review" />
 
       <main className="mx-auto grid max-w-[1440px] grid-cols-1 gap-5 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -53,7 +65,9 @@ export default async function StorePage({ params }: Props) {
               {store.region} {store.district}
             </p>
             <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
-              <h1 className="text-[24px] font-bold tracking-[-0.5px] text-black dark:text-white">{store.alias}</h1>
+              <h1 className="text-[24px] font-bold tracking-[-0.5px] text-black dark:text-white">
+                {store.alias} <span className="text-[16px] font-bold text-[#888]">휴대폰 성지 후기</span>
+              </h1>
               <Link
                 href={`/seongji/write?store=${store.id}&region=${encodeURIComponent(store.region)}`}
                 className="flex h-10 items-center gap-1.5 rounded-lg bg-[#5707EB] px-4 text-[14px] font-bold text-white hover:bg-[#4E07D2]"
@@ -61,6 +75,12 @@ export default async function StorePage({ params }: Props) {
                 <SquarePen className="h-4 w-4" /> 이 매장 후기 쓰기
               </Link>
             </div>
+
+            <p data-seo="answer" className="mt-3 text-[15px] leading-relaxed text-[#444] dark:text-slate-300">
+              {n > 0
+                ? `${store.region} ${store.district} ${store.alias}의 구매 후기 ${n}건 기준 종합 평점은 ${store.avg_total ?? '-'}점, 약속 이행률은 ${store.kept_rate == null ? '-' : Math.round(store.kept_rate * 100) + '%'}입니다. 후기 평균 숨은 조건 비용(요금제 유지 차액·부가서비스)은 ${KRW(avgHidden)}원이고, 제휴카드 조건이 붙은 후기는 ${cardRate}%입니다.`.replace(/s+/g, ' ')
+                : '아직 이 매장의 구매 후기가 없습니다. 실제로 개통했다면 계약서 기준 조건으로 첫 후기를 남겨 주세요.'}
+            </p>
 
             <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               <div className="rounded-lg bg-[#F7F8FA] p-4 dark:bg-slate-800/60">

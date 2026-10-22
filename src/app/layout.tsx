@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SITE_URL } from "@/lib/site-url";
-
-const SITE = process.env.NEXT_PUBLIC_SITE_NAME || "폰커뮤니티";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo/schema";
+import { baseOpenGraph } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE} — 휴대폰 성지 시세·공시지원금·요금 계산기`,
+    default: `${SITE_NAME} — 휴대폰 성지 평가·실구매가 비교 커뮤니티`,
     template: `%s`,
   },
-  description:
-    "휴대폰 성지 시세, 공시지원금과 선택약정 비교, 번호이동·기기변경 조건을 나누는 휴대폰 커뮤니티. SKT·KT·LG U+ 요금제로 24개월 총비용을 계산할 수 있습니다.",
+  description: SITE_DESCRIPTION,
+  // canonical·og:url은 각 페이지에서 지정 (루트에 두면 모든 페이지가 홈을 가리킴)
+  openGraph: { ...baseOpenGraph, type: "website" },
 };
 
 export default function RootLayout({

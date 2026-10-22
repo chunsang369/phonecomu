@@ -8,40 +8,43 @@ import ProfileCard from '@/components/home/profile-card'
 import ReviewCard, { Score } from '@/components/seongji/review-card'
 import { getDevicePriceBoard, getRecentReviews, listStores, type StoreSort } from '@/lib/queries/seongji'
 import { REGIONS } from '@/lib/seongji/cost'
+import JsonLd from '@/components/seo/json-ld'
+import FaqSection from '@/components/seo/faq-section'
+import { breadcrumbSchema, faqSchema, itemListSchema, type QA } from '@/lib/seo/schema'
+import { pageMeta } from '@/lib/seo/metadata'
 
-const SITE = process.env.NEXT_PUBLIC_SITE_NAME ?? '성지평가제'
 const KRW = (n: number) => new Intl.NumberFormat('ko-KR').format(n)
 
-export const metadata: Metadata = {
-  title: `휴대폰 성지 평가 — 지역별 성지 후기·약속 이행률·실구매가 | ${SITE}`,
-  description:
-    '실제 개통 조건(할부원금·요금제 유지·부가서비스·카드 조건)으로 계산한 실구매가와 약속 이행 여부로 휴대폰 성지를 비교합니다. 시세표 기기값만으로는 알 수 없는 숨은 조건 비용까지 확인하세요.',
-  alternates: { canonical: '/seongji' },
+type SP = { region?: string; sort?: string }
+const pickRegion = (r?: string) => ((REGIONS as readonly string[]).includes(r ?? '') ? r : undefined)
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
+  const sp = await searchParams
+  const region = pickRegion(sp.region)
+  // 지역별 페이지는 자기 주소를 canonical로, 정렬만 바뀐 주소는 색인하지 않음
+  const meta = pageMeta({
+    title: `${region ? region + ' ' : ''}휴대폰 성지 평가 — ${region ? region + ' ' : '지역별 '}성지 후기·약속 이행률·실구매가`,
+    description: `${region ? region + ' 지역 ' : ''}휴대폰 성지(핸드폰 성지)를 실제 개통 조건(할부원금·요금제 유지·부가서비스·카드 조건)으로 계산한 실구매가와 약속 이행 여부로 비교합니다. 시세표 기기값만으로는 알 수 없는 숨은 조건 비용까지 확인하세요.`,
+    path: region ? `/seongji?region=${encodeURIComponent(region)}` : '/seongji',
+  })
+  return sp.sort && sp.sort !== 'score' ? { ...meta, robots: { index: false, follow: true } } : meta
 }
 
-// AEO: 답변 우선 FAQ
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: '휴대폰 성지 시세표만 보고 가면 안 되는 이유는?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: '시세표에는 보통 기기값만 적혀 있고, 고가 요금제 유지 기간·부가서비스·제휴카드 같은 조건은 빠져 있습니다. 같은 기기값이라도 요금제를 6개월 더 비싸게 쓰거나 부가서비스를 붙이면 실제 부담이 수십만 원 달라집니다. 실구매가 = 기기 실부담 + (가입 요금제 − 유지 후 요금제) × 유지 개월 + 부가서비스 비용으로 비교해야 합니다.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '성지에서 말한 조건과 실제 계약이 다르면 어떻게 확인하나요?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: '계약서의 할부원금, 요금제와 유지 기간, 부가서비스 목록, 제휴카드 조건을 안내받은 내용과 대조하세요. 할부원금이 안내보다 높거나 설명 없던 부가서비스·카드 조건이 붙으면 현장에서 조건이 바뀐 것입니다. 이 사이트의 성지 평가는 이런 경우를 "현장에서 조건 변경"으로 따로 집계합니다.',
-      },
-    },
-  ],
-}
+// AEO: 화면 FAQ와 FAQPage 구조화 데이터를 같은 배열로 만든다
+const FAQ: QA[] = [
+  {
+    q: '휴대폰 성지 시세표만 보고 가면 안 되는 이유는?',
+    a: '시세표에는 보통 기기값만 적혀 있고, 고가 요금제 유지 기간·부가서비스·제휴카드 같은 조건은 빠져 있습니다. 같은 기기값이라도 요금제를 6개월 더 비싸게 쓰거나 부가서비스를 붙이면 실제 부담이 수십만 원 달라집니다. 실구매가 = 기기 실부담 + (가입 요금제 − 유지 후 요금제) × 유지 개월 + 부가서비스 비용으로 비교해야 합니다.',
+  },
+  {
+    q: '성지에서 말한 조건과 실제 계약이 다르면 어떻게 확인하나요?',
+    a: '계약서의 할부원금, 요금제와 유지 기간, 부가서비스 목록, 제휴카드 조건을 안내받은 내용과 대조하세요. 할부원금이 안내보다 높거나 설명 없던 부가서비스·카드 조건이 붙으면 현장에서 조건이 바뀐 것입니다. 이 사이트의 성지 평가는 이런 경우를 "현장에서 조건 변경"으로 따로 집계합니다.',
+  },
+  {
+    q: '성지 평가 순위는 어떻게 정하나요?',
+    a: '구매자가 매긴 가격·응대·약속 이행 3개 항목(각 1~5점)의 평균을 쓰되, 후기가 적은 매장의 점수가 튀지 않도록 (평균 × 후기 수 + 3점 × 2) ÷ (후기 수 + 2)로 보정해 정렬합니다.',
+  },
+]
 
 const SORTS: [StoreSort, string][] = [
   ['score', '평점순'],
@@ -49,9 +52,9 @@ const SORTS: [StoreSort, string][] = [
   ['recent', '최근 후기순'],
 ]
 
-export default async function SeongjiPage({ searchParams }: { searchParams: Promise<{ region?: string; sort?: string }> }) {
+export default async function SeongjiPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
-  const region = (REGIONS as readonly string[]).includes(sp.region ?? '') ? sp.region : undefined
+  const region = pickRegion(sp.region)
   const sort: StoreSort = sp.sort === 'reviews' || sp.sort === 'recent' ? sp.sort : 'score'
 
   const [stores, recent, priceBoard] = await Promise.all([listStores(region, sort), getRecentReviews(8, region), getDevicePriceBoard(region)])
@@ -65,7 +68,20 @@ export default async function SeongjiPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="min-h-screen bg-[#F2F4F6] text-[#454545] dark:bg-[#0B0F19] dark:text-[#E2E8F0]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <JsonLd
+        data={[
+          faqSchema(FAQ),
+          itemListSchema(
+            `${region ?? '전국'} 휴대폰 성지 평가`,
+            stores.slice(0, 30).map((st) => ({ name: `${st.region} ${st.district} ${st.alias}`.replace(/s+/g, ' '), path: `/seongji/${st.id}` })),
+          ),
+          breadcrumbSchema([
+            { name: '홈', path: '/' },
+            { name: '성지 평가', path: '/seongji' },
+            ...(region ? [{ name: `${region} 성지`, path: `/seongji?region=${encodeURIComponent(region)}` }] : []),
+          ]),
+        ]}
+      />
       <SiteHeader active="seongji" writeSlug="review" />
 
       <main className="mx-auto grid max-w-[1440px] grid-cols-1 gap-5 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -74,8 +90,8 @@ export default async function SeongjiPage({ searchParams }: { searchParams: Prom
           <section className="rounded-lg bg-white px-5 py-6 sm:px-[30px] dark:bg-[#111827]">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h1 className="text-[22px] font-bold tracking-[-0.5px] text-black dark:text-white">성지 평가</h1>
-                <p className="mt-1 max-w-[640px] text-[14px] leading-relaxed text-[#666] dark:text-slate-400">
+                <h1 className="text-[22px] font-bold tracking-[-0.5px] text-black dark:text-white">{region ? `${region} ` : ''}휴대폰 성지 평가</h1>
+                <p data-seo="answer" className="mt-1 max-w-[640px] text-[14px] leading-relaxed text-[#666] dark:text-slate-400">
                   <strong className="text-black dark:text-white">시세표의 기기값이 아니라, 실제 계약 조건으로 계산한 실구매가와 약속 이행 여부로 성지를 비교합니다.</strong>{' '}
                   요금제 유지·부가서비스·카드 조건까지 넣어 환산하므로 조건이 달라도 같은 기준으로 볼 수 있습니다.
                 </p>
@@ -190,6 +206,8 @@ export default async function SeongjiPage({ searchParams }: { searchParams: Prom
               </div>
             )}
           </section>
+
+          <FaqSection items={FAQ} />
         </div>
 
         <aside className="space-y-5">

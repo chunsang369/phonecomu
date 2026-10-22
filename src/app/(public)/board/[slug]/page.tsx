@@ -1,4 +1,8 @@
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
+import JsonLd from '@/components/seo/json-ld'
+import { abs, breadcrumbSchema, SITE_NAME } from '@/lib/seo/schema'
+import { pageMeta } from '@/lib/seo/metadata'
+import { BOARD_INTRO } from '@/lib/seo/boards'
 import ProfileCard from '@/components/home/profile-card'
 import PopularList from '@/components/home/popular-list'
 import AdSlot from '@/components/ads/ad-slot'
@@ -17,25 +21,30 @@ interface PageProps {
   searchParams: Promise<{ page?: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
+  const { page } = await searchParams
   const board = await getBoardBySlug(slug)
 
   if (!board) return { title: '게시판을 찾을 수 없습니다.' }
 
-  return {
-    title: `${board.name} - ${process.env.NEXT_PUBLIC_SITE_NAME || 'phone-community'}`,
-    description: board.description || `${board.name} 게시판 목록입니다.`,
-    alternates: {
-      canonical: `/board/${slug}`,
-    },
-  }
+  // 페이지마다 자기 자신을 canonical로 (2쪽 이상은 ?page=N)
+  const n = parseInt(page || '1', 10)
+  return pageMeta({
+    title: n > 1 ? `${board.name} ${n}페이지` : board.name,
+    description: BOARD_INTRO[slug] || board.description || `${board.name} 게시판 목록입니다.`,
+    path: n > 1 ? `/board/${slug}?page=${n}` : `/board/${slug}`,
+  })
 }
 
 export default async function BoardPage({ params, searchParams }: PageProps) {
   const { slug } = await params
   const { page } = await searchParams
+  // ?page=1 은 기본 주소로 영구 이동, 숫자가 아닌 page 값은 404 (중복·무한 URL 방지)
+  if (page !== undefined && !/^[1-9]\d{0,4}$/.test(page)) notFound()
+  if (page === '1') permanentRedirect(`/board/${slug}`)
   const currentPage = parseInt(page || '1', 10)
+  const pageHref = (p: number) => (p === 1 ? `/board/${slug}` : `/board/${slug}?page=${p}`)
   const pageSize = 15
   const board = await getBoardBySlug(slug)
 
@@ -50,6 +59,7 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
   // 2. 게시글 목록 로드 (페이지네이션 적용)
   const { posts, totalCount } = await getPaginatedPostsByBoard(board.id, currentPage, pageSize)
   const totalPages = Math.ceil(totalCount / pageSize) || 1
+  if (currentPage > totalPages) notFound()
 
   // 3. 로그인 유저 권한 조회
   const profile = await getCurrentProfile()
@@ -85,6 +95,22 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#F2F4F6] pb-12 text-[#454545] dark:bg-[#0B0F19] dark:text-[#E2E8F0]">
+      <JsonLd
+        data={[
+          {
+            '@type': 'CollectionPage',
+            url: abs(currentPage > 1 ? `/board/${board.slug}?page=${currentPage}` : `/board/${board.slug}`),
+            name: `${board.name} | ${SITE_NAME}`,
+            description: BOARD_INTRO[board.slug] || board.description || undefined,
+            inLanguage: 'ko-KR',
+            isPartOf: { '@id': `${abs('/')}#website` },
+          },
+          breadcrumbSchema([
+            { name: '홈', path: '/' },
+            { name: board.name, path: `/board/${board.slug}` },
+          ]),
+        ]}
+      />
       <SiteHeader active={board.slug} writeSlug={board.slug} />
 
       {/* 아이보스 게시판 목록: 본문 + 우측 360px */}
@@ -96,7 +122,9 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
             <div className="flex items-end justify-between gap-3">
               <div className="min-w-0">
                 <h1 className="text-[22px] font-bold tracking-[-0.5px] text-black dark:text-white">{board.name}</h1>
-                {board.description && <p className="mt-1 truncate text-[13px] text-[#999]">{board.description}</p>}
+                {(BOARD_INTRO[board.slug] || board.description) && (
+                  <p data-seo="answer" className="mt-1.5 text-[14px] leading-relaxed text-[#666] dark:text-slate-400">{BOARD_INTRO[board.slug] || board.description}</p>
+                )}
               </div>
               {canWrite || !user ? (
                 <WriteButton
@@ -178,7 +206,7 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
                   {/* 이전 페이지 */}
                   {currentPage > 1 ? (
                     <Link
-                      href={`/board/${board.slug}?page=${currentPage - 1}`}
+                      href={pageHref(currentPage - 1)}
                       className="flex h-8 px-3 items-center justify-center rounded-lg border border-[#CBD5E1] dark:border-slate-700 bg-white dark:bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition"
                     >
                       &lt; 이전
@@ -193,13 +221,13 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
                   {startPage > 1 && (
                     <>
                       <Link
-                        href={`/board/${board.slug}?page=1`}
+                        href={pageHref(1)}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold border border-[#CBD5E1] dark:border-slate-700 bg-white dark:bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                       >
                         1
                       </Link>
                       <Link
-                        href={`/board/${board.slug}?page=${startPage - 1}`}
+                        href={pageHref(startPage - 1)}
                         className="flex h-8 w-8 items-center justify-center text-xs font-bold text-slate-400 hover:text-[#5707EB] transition"
                         title="이전 10페이지"
                       >
@@ -214,7 +242,7 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
                     return (
                       <Link
                         key={p}
-                        href={`/board/${board.slug}?page=${p}`}
+                        href={pageHref(p)}
                         className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition ${
                           isCurrent
                             ? 'bg-[#5707EB] text-white'
@@ -230,14 +258,14 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
                   {endPage < totalPages && (
                     <>
                       <Link
-                        href={`/board/${board.slug}?page=${endPage + 1}`}
+                        href={pageHref(endPage + 1)}
                         className="flex h-8 w-8 items-center justify-center text-xs font-bold text-slate-400 hover:text-[#5707EB] transition"
                         title="다음 10페이지"
                       >
                         ...
                       </Link>
                       <Link
-                        href={`/board/${board.slug}?page=${totalPages}`}
+                        href={pageHref(totalPages)}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold border border-[#CBD5E1] dark:border-slate-700 bg-white dark:bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                       >
                         {totalPages}
@@ -248,7 +276,7 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
                   {/* 다음 페이지 */}
                   {currentPage < totalPages ? (
                     <Link
-                      href={`/board/${board.slug}?page=${currentPage + 1}`}
+                      href={pageHref(currentPage + 1)}
                       className="flex h-8 px-3 items-center justify-center rounded-lg border border-[#CBD5E1] dark:border-slate-700 bg-white dark:bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition"
                     >
                       다음 &gt;

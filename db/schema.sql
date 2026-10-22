@@ -203,3 +203,13 @@ create index if not exists idx_store_reviews_device on store_reviews (device_nam
 insert into boards (slug, name, type, allow_anonymous, read_min_level, write_min_level, description, sort) values
   ('review', '성지 평가 후기', 'review', false, 0, 1, '실제 개통 조건과 약속 이행 여부를 남기는 성지 구매 후기', 33)
 on conflict (slug) do nothing;
+
+-- ── 검색·AI 유입 측정 (2026-10-22) ──
+-- 검색엔진·AI 크롤러 방문(kind=bot)과 AI 답변 서비스에서 넘어온 방문(kind=ai_ref)을 일자별로 센다. 개인정보·IP는 저장하지 않는다.
+create table if not exists seo_daily (
+  day     date not null,
+  kind    text not null check (kind in ('bot','ai_ref')),
+  source  text not null,
+  hits    int  not null default 0,
+  primary key (day, kind, source)
+);

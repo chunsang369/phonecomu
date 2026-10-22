@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { notifyIndexNow } from '@/lib/seo/indexnow'
 import * as z from 'zod'
 import { one, tx } from '@/lib/db'
 import { getCurrentProfile } from '@/lib/auth/session'
@@ -152,6 +153,7 @@ export async function createStoreReview(input: ReviewInput) {
     revalidatePath('/seongji')
     revalidatePath(`/seongji/${result.storeId}`)
     revalidatePath('/')
+    notifyIndexNow([`/seongji/${result.storeId}`])
     return { success: true, storeId: result.storeId }
   } catch (e) {
     const msg = (e as Error).message

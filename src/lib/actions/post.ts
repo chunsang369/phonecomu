@@ -4,6 +4,7 @@ import { one, tx } from '@/lib/db'
 import { getCurrentProfile } from '@/lib/auth/session'
 import { awardPoints } from '@/lib/db/points'
 import { revalidatePath } from 'next/cache'
+import { notifyIndexNow } from '@/lib/seo/indexnow'
 import * as z from 'zod'
 import { sanitizeHtml, htmlToText, looksLikeHtml } from '@/lib/sanitize-html'
 
@@ -66,8 +67,8 @@ export async function createPost(prevState: any, formData: FormData) {
     }
 
     // 4. 게시판 확인: 클라이언트가 보낸 boardId 대신 slug 로 다시 조회하고 쓰기 권한(레벨)·익명 허용 여부를 서버에서 검증
-    const board = await one<{ id: number; write_min_level: number; allow_anonymous: boolean; type: string }>(
-      'select id, write_min_level, allow_anonymous, type from boards where slug = $1',
+    const board = await one<{ id: number; write_min_level: number; read_min_level: number; allow_anonymous: boolean; type: string }>(
+      'select id, write_min_level, read_min_level, allow_anonymous, type from boards where slug = $1',
       [boardSlug],
     )
     if (!board || board.id !== boardId) {
@@ -93,6 +94,7 @@ export async function createPost(prevState: any, formData: FormData) {
     // 6. 캐시 갱신
     revalidatePath(`/board/${boardSlug}`)
     revalidatePath('/')
+    if (board.read_min_level <= 0) notifyIndexNow([`/board/${boardSlug}/${post.id}`])
 
     return { success: true, postId: post.id }
   } catch (err) {

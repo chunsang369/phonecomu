@@ -9,6 +9,26 @@ import SideTabs from '@/components/home/side-tabs'
 import { getAllBoards } from '@/lib/queries/board'
 import { getPostsByBoard, type PostRow } from '@/lib/queries/post'
 import { getRecentComments } from '@/lib/queries/comment'
+import JsonLd from '@/components/seo/json-ld'
+import { siteGraph, SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo/schema'
+import { pageMeta } from '@/lib/seo/metadata'
+
+export const metadata = pageMeta({
+  title: `${SITE_NAME} — 휴대폰 성지 평가·실구매가 비교 커뮤니티`,
+  description: SITE_DESCRIPTION,
+  path: '/',
+})
+export const dynamic='force-dynamic'
+
+// 첫 화면 소개 아래 구매 가이드 링크 (질문형 검색어 → 가이드 문서로 연결)
+const GUIDE_CHIPS = [
+  { href: '/guide/buy-phone-cheap', label: '휴대폰 싸게 사는 법' },
+  { href: '/guide/what-is-seongji', label: '휴대폰 성지란?' },
+  { href: '/guide/subsidy-vs-selective', label: '공시지원금 vs 선택약정' },
+  { href: '/guide/avoid-bait', label: '성지 낚시 피하는 법' },
+  { href: '/guide/contract-checklist', label: '개통 전 계약서 체크리스트' },
+]
+
 
 // 피드에 쓰는 짧은 게시판 이름 (아이보스: 자유·행사정보 등 2~4자)
 const SHORT: Record<string, string> = {
@@ -62,6 +82,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-[#F2F4F6] text-[#454545] dark:bg-[#0B0F19] dark:text-[#E2E8F0]">
+      <JsonLd data={siteGraph()} />
       <SiteHeader active="home" />
 
       <main className="mx-auto max-w-[1440px] px-4 pb-16 pt-5 sm:px-5">
@@ -89,6 +110,23 @@ export default async function Home() {
                 <ChevronRight className="h-4 w-4" />
               </span>
             </Link>
+            {/* 사이트 소개: 페이지 유일한 H1 + 바로 아래 직접 답 문단 */}
+            <section className="rounded-lg bg-white px-4 py-5 sm:px-[30px] dark:bg-[#111827]">
+              <h1 className="text-[20px] font-extrabold tracking-[-0.4px] text-black dark:text-white">휴대폰 성지 평가 커뮤니티 {SITE_NAME}</h1>
+              <p data-seo="answer" className="mt-2 text-[15px] leading-[1.7] text-[#444] dark:text-slate-300">
+                {SITE_NAME}는 휴대폰 성지(핸드폰 성지)에서 실제로 개통한 조건을 구매자가 남기고, 요금제 유지·부가서비스 비용까지 더한 실구매가와 약속 이행률로 매장을 비교하는 커뮤니티입니다. 휴대폰을 싸게 사는 법과 공시지원금·선택약정 비교 방법도 가이드로 정리해 두었습니다.
+              </p>
+              <nav aria-label="휴대폰 구매 가이드" className="mt-3 flex flex-wrap gap-2">
+                {GUIDE_CHIPS.map((g) => (
+                  <Link key={g.href} href={g.href} className="rounded-full border border-[#E0E0E0] px-3 py-1.5 text-[13px] font-bold text-[#454545] hover:border-[#5707EB] hover:text-[#5707EB] dark:border-slate-700 dark:text-slate-200">
+                    {g.label}
+                  </Link>
+                ))}
+                <Link href="/guide" className="flex items-center rounded-full bg-[#F3EEFF] px-3 py-1.5 text-[13px] font-bold text-[#5707EB] dark:bg-[#2A1366] dark:text-[#C4B5FD]">
+                  가이드 전체 <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              </nav>
+            </section>
             <MainTabbedFeed initialPosts={unifiedPosts} />
           </div>
 

@@ -1,60 +1,61 @@
 import { NextResponse } from 'next/server'
 import { SITE_URL } from '@/lib/site-url'
 import { q } from '@/lib/db'
+import { GUIDES } from '@/lib/guides/content'
+import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo/schema'
+
+// AI 답변 엔진용 사이트 안내(llms.txt 형식). 1시간마다 게시판·최신 글 반영
+export const revalidate = 3600
 
 export async function GET() {
-  // 1. 공개 게시판 목록
+  // 게시판·최신 글은 보조 정보라 DB 장애 시에도 정적 안내(가이드·도구)는 내보낸다
   const boards = await q<{ slug: string; name: string; description: string | null }>(
     'select slug, name, description from boards where read_min_level <= 0 order by sort',
   ).catch(() => [])
-
-  // 2. 최신 공개 게시글 5개 (llms.txt 동적 Context 용)
   const posts = await q<{ id: string; title: string; created_at: string; slug: string; name: string }>(
     `select p.id, p.title, p.created_at, b.slug, b.name
        from posts p join boards b on b.id = p.board_id
       where p.status = 'published' and b.read_min_level <= 0
-      order by p.created_at desc limit 5`,
+      order by p.created_at desc limit 10`,
   ).catch(() => [])
 
-  const origin = SITE_URL
-  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'phone-community'
+  const o = SITE_URL
+  const guides = GUIDES.map((g) => `- [${g.title}](${o}/guide/${g.slug}): ${g.summary}`).join('\n')
+  const boardList = boards.map((b) => `- [${b.name}](${o}/board/${b.slug})${b.description ? `: ${b.description}` : ''}`).join('\n')
+  const recent = posts.map((p) => `- [${p.title}](${o}/board/${p.slug}/${p.id}) — ${p.name}, ${p.created_at.slice(0, 10)}`).join('\n')
 
-  const boardsSection = boards.map(b => 
-    `- [${b.name}](${origin}/board/${b.slug}): ${b.description || '게시판 설명 없음'}`
-  ).join('\n')
+  const body = `# ${SITE_NAME}
 
-  const postsSection = posts
-    .map((p) => `- [${p.name}] [${p.title}](${origin}/board/${p.slug}/${p.id}) (${new Date(p.created_at).toLocaleDateString('ko-KR')})`)
-    .join('\n')
+> ${SITE_DESCRIPTION}
 
-  const markdownContent = `# ${siteName} - LLM Context 및 사이트 맵
+${SITE_NAME}는 휴대폰 성지(핸드폰 성지)에서 실제로 개통한 조건을 구매자가 남기고, 그 조건을 "실구매가 환산"(기기 실부담 + 요금제 유지·부가서비스 등 숨은 조건 비용)으로 바꿔 매장끼리 같은 기준으로 비교하는 커뮤니티입니다. 휴대폰 싸게 사는 법, 공시지원금과 선택약정 비교, 번호이동·기기변경 선택 같은 구매 정보를 함께 제공합니다.
 
-본 문서는 AI 에이전트 및 LLM 크롤러를 위해 구조화된 사이트 맵 지침서입니다.
+## 휴대폰 구매 가이드
+- [휴대폰 구매 가이드 전체](${o}/guide): 읽는 순서와 전체 목록
+${guides}
 
-## 1. 플랫폼 소개
-- **서비스명:** ${siteName}
-- **목적:** 휴대폰 성지(공시지원금·선택약정·번호이동 조건이 좋은 판매점)의 실제 개통 조건을 구매자가 직접 남기고, 같은 기준(실구매가 환산·약속 이행 여부)으로 비교하는 커뮤니티.
-- **등급 체계:** 6단계 등급 스키마 탑재 (새싹, 일반, 우수, 전문가, 스태프, 관리자). 포인트와 출석 일수에 따라 동적으로 연동됩니다.
+## 도구
+- [성지 평가](${o}/seongji): 지역별 휴대폰 성지의 구매 후기를 실구매가 환산·약속 이행률·보정 평점으로 비교
+- [공시지원금 vs 선택약정 계산기](${o}/calculator): SKT·KT·LG U+ 요금제(스마트초이스 기준)로 24개월 총비용·월 청구액·중도 해지 비용 비교
+- [소개와 평가 기준](${o}/about): 실구매가 계산식, 평점 보정 방식, 데이터 출처, 후기 작성 원칙
 
-## 2. 도구
-- [성지 평가](${origin}/seongji): 실제 개통 조건(할부원금·요금제 유지·부가서비스·카드)으로 환산한 실구매가와 약속 이행률로 지역별 휴대폰 성지를 비교합니다.
-- [공시지원금 vs 선택약정 계산기](${origin}/calculator): SKT·KT·LG U+ 요금제(스마트초이스 기준)로 24개월 총비용, 월 청구액, 중도 해지 비용을 비교합니다.
+## 핵심 기준 (인용 시 참고)
+- 선택약정 요금할인율: 월 요금의 25%
+- 단통법 폐지(2025-07-22 시행) 이후 추가지원금 상한(공시지원금의 15%)이 없어졌고, 추가지원금과 선택약정을 함께 받을 수 있습니다.
+- 실구매가 환산 = 기기 실부담(현금완납가 또는 할부원금 + 할부이자) + (가입 요금제 − 유지 후 요금제) × 유지 개월 + 부가서비스 월 합계 × 유지 개월
+- 공시지원금·요금은 통신사·요금제·가입유형·날짜마다 바뀌므로 개통 전 통신사 공시와 계약서로 확인해야 합니다.
 
-## 3. 주요 게시판 (Boards)
-${boardsSection}
+## 커뮤니티 게시판
+${boardList || '- (게시판 목록을 불러오지 못했습니다)'}
 
-## 4. 최신 글 (Recent Threads)
-${postsSection || '- 최근 작성된 글이 없습니다.'}
+## 최신 글
+${recent || '- (최신 글을 불러오지 못했습니다)'}
 
----
-- **사이트 주소:** ${origin}
-- **sitemap.xml 주소:** ${origin}/api/sitemap.xml
+## 기타
+- 사이트맵: ${o}/sitemap.xml
 `
 
-  return new NextResponse(markdownContent.trim(), {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=1800',
-    },
+  return new NextResponse(body, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=1800' },
   })
 }

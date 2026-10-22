@@ -21,6 +21,7 @@ const NAV_ACCENT = [
   { key: 'seongji', href: '/seongji', label: '성지평가' },
   { key: 'coordinate', href: '/board/coordinate', label: '지역별 진짜성지' },
   { key: 'calculator', href: '/calculator', label: '요금계산기' },
+  { key: 'guide', href: '/guide', label: '구매 가이드' },
   { key: 'notice', href: '/board/notice', label: '공지사항' },
 ]
 

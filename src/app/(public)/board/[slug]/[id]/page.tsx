@@ -20,6 +20,9 @@ import WriteButton from '@/components/ui/write-button'
 import BackButton from '@/components/ui/back-button'
 import ViewCounter from '@/components/ui/view-counter'
 import { cookies } from 'next/headers'
+import JsonLd from '@/components/seo/json-ld'
+import { breadcrumbSchema, discussionPostingSchema } from '@/lib/seo/schema'
+import { pageMeta } from '@/lib/seo/metadata'
 
 interface PageProps {
   params: Promise<{ slug: string; id: string }>
@@ -31,13 +34,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!post) return { title: '게시글을 찾을 수 없습니다.' }
 
-  return {
-    title: `${post.title} - ${process.env.NEXT_PUBLIC_SITE_NAME || 'phone-community'}`,
+  return pageMeta({
+    title: post.title,
     description: post.content ? htmlToText(post.content).substring(0, 150) : '게시글 본문 상세 내용입니다.',
-    alternates: {
-      canonical: `/board/${slug}/${id}`,
-    },
-  }
+    path: `/board/${slug}/${id}`,
+    type: 'article',
+    publishedTime: post.created_at,
+    modifiedTime: post.updated_at,
+  })
 }
 
 export default async function PostDetailPage({ params }: PageProps) {
@@ -106,6 +110,31 @@ export default async function PostDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-[#F2F4F6] dark:bg-[#0B0F19] text-[#1E293B] dark:text-[#E2E8F0] font-sans antialiased pb-12">
       
+      {/* 토론 포럼 구조화 데이터: 본문·작성자·작성/수정 시각·공개 댓글 (비밀댓글 제외) */}
+      <JsonLd
+        data={[
+          discussionPostingSchema({
+            path: `/board/${board.slug}/${post.id}`,
+            headline: post.title,
+            text: post.content ? htmlToText(post.content).slice(0, 5000) : post.title,
+            datePublished: post.created_at,
+            dateModified: post.updated_at !== post.created_at ? post.updated_at : undefined,
+            authorName: post.is_anonymous ? post.anon_tag || '익명' : post.author?.display_name || '성지회원',
+            authorPath: !post.is_anonymous && post.author?.username ? `/u/${post.author.username}` : null,
+            commentCount: post.comment_count,
+            upvotes: post.upvotes,
+            comments: comments
+              .filter((c) => !c.is_secret)
+              .slice(0, 20)
+              .map((c) => ({ text: c.content, datePublished: c.created_at, authorName: c.author_display_name })),
+          }),
+          breadcrumbSchema([
+            { name: '홈', path: '/' },
+            { name: board.name, path: `/board/${board.slug}` },
+            { name: post.title, path: `/board/${board.slug}/${post.id}` },
+          ]),
+        ]}
+      />
       <SiteHeader active={board.slug} writeSlug={board.slug} />
 
       {/* 3. 메인 레이아웃 (아이보스식 3단 구성) */}

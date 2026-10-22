@@ -76,3 +76,15 @@
 - 조치: Aside의 ad-config.ts·ads.txt·약관 수정은 그대로 두고, ad-slot.tsx를 같은 설계(네트워크 1개만 사용 → 자사 광고)로 다시 작성. 차이: 광고가 없으면 "광고 영역" 자리표시를 보여줌(NEXT_PUBLIC_HIDE_AD_PLACEHOLDER=1이면 숨김). 호출은 <AdSlot slot="home-top|home-side|board-top|board-side|post-bottom|post-side|calc-bottom" /> 또는 기존 방식 <AdSlot placement="..." /> 둘 다 지원.
 - 슬롯 크기·연결 placement: src/lib/ads/index.ts. 쿠팡 위젯 container 옵션은 실제 연동 시 확인 필요.
 - 이 폴더를 여러 에이전트가 동시에 수정 중이었음 → 같은 파일 동시 수정 주의.
+
+## 세티즌식 계산기·i-boss UI·광고 슬롯·배포·성지 평가 (Claude Code, 2026-10-22 저녁)
+- 계산기 재작성(세티즌식 한 화면): 통신사·제조사·제품·요금제분류·가입조건 패널 + 요금제별 [공시/선약] 2줄 월청구액 표, 요금제별 공시지원금 입력, 유리 표시, 해지예상금. src/components/calculator/phone-fee-calculator.tsx
+- 홈 i-boss 3단(820/180/360): 상단 광고 → 요금계산기 바로가기 칸(계산기 직접 삽입 아님, 사용자 지시) → 피드 / 바로가기 카드 / 프로필·광고·새글새댓글. 공통 ProfileCard·PopularList(src/components/home/). 게시판 목록·글상세 2단(본문+360). 헤더 i-boss 치수(80+52px, #663399 강조 메뉴, 광고 문의).
+- 퀴즈·자리채움 이벤트 배너 삭제(사용자 지시). (auth)·(app) 그룹 layout과 search·u·support에 헤더 연결(홈 이동).
+- 광고: AdSlot slot=home-top|home-side|board-top|board-side|post-bottom|post-side|calc-bottom 배치 완료. 광고 API는 사용자가 나중에 연결.
+- 성지 평가: db/schema.sql에 stores·store_reviews·review 게시판 추가(migrate 적용됨). /seongji, /seongji/[id], /seongji/write. 실구매가 환산 = 기기 실부담(할부 5.9%) + 요금제 유지 차액 + 부가서비스(src/lib/seongji/cost.ts). 매장은 별칭+지역만, 연락처·링크 차단, 같은 매장 30일 1회.
+- 배포: Vercel oraelintl 팀 프로젝트 phonecomu → https://phonecomu.vercel.app (리전 hnd1, 환경변수 DATABASE_URL·SMARTCHOICE_API_KEY(Sensitive)·NEXT_PUBLIC_SITE_NAME·NEXT_PUBLIC_KAKAO_MAP_KEY). 커밋 979e5c4까지 CLI 운영 배포됨. 0cc2142(성지 평가)는 로컬 커밋만, 미배포.
+- GitHub: oraelintl/phonecomu 저장소 미생성(내장 브라우저 GitHub 미로그인, gh는 chunsang369만). 생성 후 git remote add orael git@github-oraelintl:oraelintl/phonecomu.git → push master:main → vercel git connect.
+- 커밋 제외 유지: scratch/, scripts/(크롤러), .github/(4시간 크롤러 워크플로), .claude/, README_PPOMPPU.md. 커밋 작성자는 oraelintl(Vercel 배포 차단 방지).
+- 제약: /api/upload가 public/uploads에 저장 → Vercel에서는 이미지 업로드 불가(읽기 전용 파일시스템). Contabo 저장소나 Vercel Blob으로 이전 필요.
+- 테스트 데이터(Contabo DB): 계정 qatester01, [테스트] 글·댓글, [테스트] 강남역 2층 매장·후기 1건.

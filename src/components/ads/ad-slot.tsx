@@ -78,20 +78,8 @@ export default function AdSlot({ slot, placement: placementProp, className = '' 
       })
     } else if (provider === 'adfit') {
       loadScript('https://t1.daumcdn.net/kas/static/ba.min.js')
-    } else if (provider === 'coupang') {
-      loadScript('https://ads-partners.coupang.com/g.js').then(() => {
-        if (!window.PartnersCoupang) return
-        // 쿠팡 위젯을 이 자리에 렌더링 (container 옵션 지원 여부는 실제 위젯 ID로 연동할 때 확인 필요 [미확인])
-        new window.PartnersCoupang.G({
-          id: Number(unit),
-          trackingCode: adConfig.coupangTrackingCode,
-          template: 'carousel',
-          width: String(size.w),
-          height: String(size.h),
-          container: box.id,
-        })
-      })
     }
+    // 쿠팡은 아래 JSX의 공식 iframe 태그(widgets.html)로 그린다 — 스크립트 로드 불필요 (Aside 2026-10-22)
   }, [useNetwork, provider, unit, size.w, size.h])
 
   const hasHouse = !useNetwork && !!house.url && !!house.title
@@ -118,7 +106,27 @@ export default function AdSlot({ slot, placement: placementProp, className = '' 
           {provider === 'adfit' && (
             <ins className="kakao_ad_area" style={{ display: 'none' }} data-ad-unit={unit} data-ad-width={String(size.w)} data-ad-height={String(size.h)} />
           )}
+          {provider === 'coupang' && (
+            // 쿠팡 파트너스 다이내믹 배너 공식 iframe 태그 형식(파트너스 코드 → iframe 태그)
+            <iframe
+              title="쿠팡 파트너스"
+              src={`https://ads-partners.coupang.com/widgets.html?id=${encodeURIComponent(unit)}&template=carousel&trackingCode=${encodeURIComponent(adConfig.coupangTrackingCode)}&subId=&width=${size.w}&height=${size.h}&tsource=`}
+              width={size.w}
+              height={size.h}
+              frameBorder={0}
+              scrolling="no"
+              referrerPolicy="unsafe-url"
+              className="max-h-full max-w-full"
+            />
+          )}
         </div>
+      )}
+
+      {useNetwork && provider === 'coupang' && (
+        // 쿠팡 파트너스 필수 경제적 이해관계 표시(공정위 추천·보증 심사지침). 없으면 최종승인 반려 사유
+        <p className="pointer-events-none absolute inset-x-0 bottom-0 bg-white/85 px-2 py-0.5 text-center text-[10px] leading-tight text-[#888] dark:bg-[#111827]/85">
+          이 광고는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+        </p>
       )}
 
       {hasHouse && (

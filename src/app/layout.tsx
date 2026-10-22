@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site-url";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_NAME || "폰커뮤니티";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${SITE} — 휴대폰 성지 시세·공시지원금·요금 계산기`,
     template: `%s`,

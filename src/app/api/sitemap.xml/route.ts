@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { SITE_URL } from '@/lib/site-url'
 import { q } from '@/lib/db'
 
 // 빌드 시점 고정 대신 1시간마다 새 글·매장 반영
@@ -18,10 +19,10 @@ export async function GET() {
     "select s.id, max(r.created_at) as updated from stores s left join store_reviews r on r.store_id = s.id where s.status = 'active' group by s.id",
   ).catch(() => [])
   const storeUrls = stores
-    .map((s) => `<url><loc>${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/seongji/${s.id}</loc>${s.updated ? `<lastmod>${new Date(s.updated).toISOString()}</lastmod>` : ''}<changefreq>weekly</changefreq><priority>0.7</priority></url>`)
+    .map((s) => `<url><loc>${SITE_URL}/seongji/${s.id}</loc>${s.updated ? `<lastmod>${new Date(s.updated).toISOString()}</lastmod>` : ''}<changefreq>weekly</changefreq><priority>0.7</priority></url>`)
     .join('')
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const origin = SITE_URL
 
   const boardUrls = boards.map((b) => `
     <url>

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { SITE_URL } from '@/lib/site-url'
 import { q } from '@/lib/db'
 
 export async function GET() {
@@ -15,7 +16,7 @@ export async function GET() {
       order by p.created_at desc limit 5`,
   ).catch(() => [])
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const origin = SITE_URL
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'phone-community'
 
   const boardsSection = boards.map(b => 

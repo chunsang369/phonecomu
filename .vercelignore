@@ -1,0 +1,11 @@
+# Vercel CLI 업로드 제외 (비밀값·로컬 작업물)
+.env
+.env.*
+scratch/
+scripts/
+.github/
+.claude/
+.agents/
+README_PPOMPPU.md
+*.tsbuildinfo
+verify_*.js

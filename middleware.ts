@@ -1,20 +1,21 @@
-import { type NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+// 로그인 필수 경로: 세션 쿠키가 없으면 로그인 화면으로 보낸다.
+// 쿠키의 유효성(만료·위조)은 각 페이지/서버 액션의 getCurrentProfile()이 DB로 다시 확인한다.
+const AUTH_REQUIRED = ['/write', '/messages', '/notifications', '/mypage']
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  if (AUTH_REQUIRED.some((p) => pathname.startsWith(p)) && !request.cookies.get('pc_session')?.value) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.search = ''
+    url.searchParams.set('next', pathname)
+    return NextResponse.redirect(url)
+  }
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    /*
-     * 아래 경로들을 제외한 모든 요청 경로에 대해 미들웨어 실행:
-     * - _next/static (정적 파일)
-     * - _next/image (이미지 최적화 파일)
-     * - favicon.ico (파비콘)
-     * - robots.txt, sitemap.xml, llms.txt (SEO 파일)
-     * - 이미지/미디어 자원 (.png, .jpg, .svg 등)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/write/:path*', '/messages/:path*', '/notifications/:path*', '/mypage/:path*'],
 }

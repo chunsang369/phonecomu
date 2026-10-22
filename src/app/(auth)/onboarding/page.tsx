@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { getMyProfileBasics, updateMyProfile } from '@/lib/actions/profile'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -32,7 +32,6 @@ export default function OnboardingPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const router = useRouter()
-  const supabase = createClient()
 
   const {
     register,
@@ -49,24 +48,15 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     async function checkUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const profile = await getMyProfileBasics()
 
-      if (!user) {
+      if (!profile) {
         // 미인증 유저 로그인으로 튕겨냄
         router.push('/login')
         return
       }
 
-      setUserId(user.id)
-
-      // 이미 생성된 프로필이 있는지 조회
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('username, display_name')
-        .eq('id', user.id)
-        .single()
+      setUserId(profile.id)
 
       if (profile) {
         // 기본 자동 생성 닉네임 등을 폼 기본값으로 바인딩
@@ -77,7 +67,7 @@ export default function OnboardingPage() {
     }
 
     checkUser()
-  }, [supabase, router, setValue])
+  }, [router, setValue])
 
   const onSubmit = async (values: OnboardingFormValues) => {
     if (!userId) return
@@ -86,36 +76,16 @@ export default function OnboardingPage() {
     setErrorMsg(null)
 
     try {
-      // 아이디(username) 중복 검사
-      const { data: duplicate, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', values.username)
-        .neq('id', userId)
-        .maybeSingle()
+      // 중복 검사 + 프로필 업데이트 (서버 액션)
+      const res = await updateMyProfile(values.username, values.display_name)
 
-      if (duplicate) {
-        setErrorMsg('이미 사용 중인 아이디입니다. 다른 아이디를 선택해주세요.')
-        setLoading(false)
-        return
-      }
-
-      // 프로필 업데이트 진행
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          username: values.username,
-          display_name: values.display_name,
-        })
-        .eq('id', userId)
-
-      if (error) {
-        setErrorMsg(error.message)
+      if ('error' in res && res.error) {
+        setErrorMsg(res.error)
       } else {
         router.push('/')
         router.refresh()
       }
-    } catch (err) {
+    } catch {
       setErrorMsg('프로필 설정 도중 오류가 발생했습니다.')
     } finally {
       setLoading(false)

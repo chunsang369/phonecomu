@@ -49,6 +49,10 @@
 }
 
 :root {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --brand: #5707EB;
+  --brand-strong: #4E07D2;
+  --page-bg: #F2F4F6;
   --background: #FFFFFF;
   --foreground: #1A1D24;
   --card: #FFFFFF;
@@ -116,8 +120,352 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-color: var(--page-bg);
+    color: #454545;
+    font-size: 14px;
+  }
+  .dark body {
+    background-color: var(--background);
+    color: var(--foreground);
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* 모바일 서식 툴바: 가로 스크롤 시 스크롤바 숨김 (깔끔한 스트립) */
+.pc-mobile-format-toolbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.pc-mobile-format-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─────────────────────────────────────────────
+   리치 에디터 본문 공통 스타일 (.pc-content)
+   에디터 편집 영역과 게시글 뷰어가 함께 사용해
+   WYSIWYG 일관성을 유지한다.
+   ───────────────────────────────────────────── */
+.pc-content {
+  word-break: break-word;
+}
+
+.pc-content p {
+  margin: 0 0 2px;
+  min-height: 1.4em;
+}
+
+.pc-content h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 18px 0 8px;
+  line-height: 1.4;
+}
+
+.pc-content h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 16px 0 6px;
+  line-height: 1.4;
+}
+
+.pc-content h3 {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 14px 0 4px;
+  line-height: 1.4;
+}
+
+/* Tailwind preflight 가 제거한 목록 스타일 복원 */
+.pc-content ul {
+  list-style: disc;
+  padding-left: 1.6em;
+  margin: 6px 0;
+}
+
+.pc-content ol {
+  list-style: decimal;
+  padding-left: 1.6em;
+  margin: 6px 0;
+}
+
+.pc-content li {
+  margin: 2px 0;
+}
+
+.pc-content a,
+.pc-content .pc-link {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dark .pc-content a,
+.dark .pc-content .pc-link {
+  color: #60a5fa;
+}
+
+.pc-content sup {
+  vertical-align: super;
+  font-size: 0.72em;
+}
+
+.pc-content sub {
+  vertical-align: sub;
+  font-size: 0.72em;
+}
+
+/* 이미지 */
+.pc-content img,
+.pc-content .pc-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+/* 스티커(대형 이모지) */
+.pc-content .pc-sticker {
+  display: inline-block;
+  font-size: 44px;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
+/* 표 */
+.pc-content table,
+.pc-content .pc-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  table-layout: fixed;
+}
+
+.pc-content td,
+.pc-content th {
+  border: 1px solid #d3d9e1;
+  padding: 8px 10px;
+  font-size: 14px;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.pc-content th {
+  background: #f4f6f9;
+  font-weight: 700;
+}
+
+.dark .pc-content td,
+.dark .pc-content th {
+  border-color: #334155;
+}
+
+.dark .pc-content th {
+  background: #1e293b;
+}
+
+/* 소스코드 블록 */
+.pc-content .pc-code {
+  position: relative;
+  background: #1e2430;
+  color: #e6edf3;
+  border-radius: 10px;
+  padding: 34px 16px 14px;
+  margin: 12px 0;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-x: auto;
+  white-space: pre;
+  tab-size: 4;
+}
+
+.pc-content .pc-code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 8px;
+  left: 14px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8b98ab;
+}
+
+.pc-content .pc-code code {
+  font-family: inherit;
+  background: transparent;
+  color: inherit;
+}
+
+/* 동영상 (유튜브 임베드) */
+.pc-content .pc-video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  max-width: 720px;
+  margin: 12px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+}
+
+.pc-content .pc-video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.pc-content .pc-video-file {
+  width: 100%;
+  max-width: 720px;
+  margin: 12px 0;
+  border-radius: 10px;
+  background: #000;
+}
+
+/* 일정 / 장소 카드 */
+.pc-content .pc-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid #e5e8ec;
+  background: #f9fafc;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 10px 0;
+  max-width: 480px;
+}
+
+.dark .pc-content .pc-card {
+  border-color: #334155;
+  background: #16213326;
+}
+
+.pc-content .pc-card-ico {
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.pc-content .pc-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pc-content .pc-card-title {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.pc-content .pc-card-line {
+  font-size: 12px;
+  color: #5b6472;
+}
+
+.dark .pc-content .pc-card-line {
+  color: #94a3b8;
+}
+
+.pc-content .pc-card-memo {
+  margin-top: 2px;
+}
+.pc-content .pc-card-maplink {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.dark .pc-content .pc-card-maplink {
+  color: #60a5fa;
+}
+
+/* ── 모바일 전용 이단 레이어 고정 툴바 스타일 ── */
+@media (max-width: 767px) {
+  /* 2열 서식 툴바 모바일 고정 (1열 삽입 툴바(37px) 바로 위에 밀착 배치) */
+  .pc-mobile-format-toolbar {
+    position: fixed !important;
+    bottom: 37px !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    background-color: #ffffff !important;
+    border-top: 1px solid #e5e8ec !important;
+    border-bottom: 1px solid #e5e8ec !important;
+    z-index: 9999 !important;
+    overflow-x: auto !important;
+    /* display 은 React(hidden/flex)가 제어 — '서식(T)' 눌렀을 때만 노출 */
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    padding: 6px 12px !important;
+    scrollbar-width: none;
+  }
+  .pc-mobile-format-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .dark .pc-mobile-format-toolbar {
+    background-color: #0f1626 !important;
+    border-color: #334155 !important;
+  }
+
+  /* 1열 삽입 툴바 모바일 고정 (맨 아래 배치) */
+  .pc-mobile-insert-toolbar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    background-color: #ffffff !important;
+    border-top: 1px solid #e5e8ec !important;
+    z-index: 10000 !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    padding: 4px 8px !important;
+  }
+  .dark .pc-mobile-insert-toolbar {
+    background-color: #0f1626 !important;
+    border-color: #334155 !important;
+  }
+
+  /* 기본 상태에서는 하단 고정 바(삽입 툴바) 1개만 보이므로 그 높이만큼만 여백 확보
+     (에디터 편집영역에만 적용, 게시글 뷰어 제외) */
+  .pc-content[contenteditable] {
+    padding-bottom: 72px !important;
+  }
+
+  /* 툴바가 화면 하단에 고정되어 있어, 버튼의 팝업 패널을 아래로 열면 화면 밖으로 나가거나
+     가로 스크롤 컨테이너(overflow)에 잘린다. 따라서 모바일에서는 모든 툴바 팝업(pc-fmt-panel)을
+     뷰포트 좌우 8px 여백의 fixed 바텀시트로 통일해, 툴바 바로 위에 정갈하게 밀착시킨다. */
+  .pc-fmt-panel {
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    /* 서식 툴바(2열, 37~83px)에서 여는 팝업 → 서식 툴바 바로 위 */
+    bottom: 87px !important;
+    top: auto !important;
+    margin: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: 46vh !important;
+    overflow-y: auto !important;
+    z-index: 10001 !important;
+    /* 잔여 transform 초기화 (방어적). 좌우 중앙정렬은 JSX 에서 translate 클래스를 제거해 처리 */
+    transform: none !important;
+  }
+
+  /* 삽입 툴바(1열, 0~37px)에서 여는 팝업(스티커·표·더보기)은 서식 툴바가 숨겨진 상태이므로
+     삽입 툴바 바로 위에 밀착시킨다. (.pc-fmt-panel 뒤에 선언 → bottom 재정의) */
+  .pc-insert-panel {
+    bottom: 41px !important;
   }
 }

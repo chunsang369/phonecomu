@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createComment } from '@/lib/actions/comment'
-import { Loader2, MessageSquare, Lock, Reply, Trash } from 'lucide-react'
+import { Loader2, MessageSquare, Lock, Reply, Trash, Image } from 'lucide-react'
 import AnonBadge from './anon-badge'
 
 interface Comment {
@@ -48,6 +48,79 @@ export default function CommentSection({ postId, comments, currentUserId }: Comm
   const [replyContent, setReplyContent] = useState('')
   const [replyIsAnonymous, setReplyIsAnonymous] = useState(false)
   const [replyIsSecret, setReplyIsSecret] = useState(false)
+
+  // 이미지 업로드 로딩 제어
+  const [imageUploading, setImageUploading] = useState(false)
+  const [replyImageUploading, setReplyImageUploading] = useState<string | null>(null)
+
+  // 이미지 업로드 헬퍼
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+      if (data.url) return data.url
+      if (data.error) alert(data.error)
+    } catch {
+      alert('이미지 업로드 중 오류가 발생했습니다.')
+    }
+    return null
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, isReply = false, parentId: string | null = null) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (isReply && parentId) {
+      setReplyImageUploading(parentId)
+      const url = await uploadImage(file)
+      if (url) {
+        setReplyContent(prev => `${prev}\n[img:${url}]`)
+      }
+      setReplyImageUploading(null)
+    } else {
+      setImageUploading(true)
+      const url = await uploadImage(file)
+      if (url) {
+        setContent(prev => `${prev}\n[img:${url}]`)
+      }
+      setImageUploading(false)
+    }
+  }
+
+  // 댓글 내 [img:URL] 패턴 파싱하여 렌더링해주는 헬퍼
+  const renderCommentContent = (text: string) => {
+    if (!text) return ''
+    const parts: React.ReactNode[] = []
+    const imgRegex = /\[img:([^\s\]]+)\]/g
+    let lastIndex = 0
+    let match
+
+    while ((match = imgRegex.exec(text)) !== null) {
+      const preText = text.substring(lastIndex, match.index)
+      if (preText) {
+        parts.push(<span key={`txt-${lastIndex}`} className="whitespace-pre-wrap">{preText}</span>)
+      }
+      const imgUrl = match[1]
+      parts.push(
+        <div key={`img-${match.index}`} className="mt-2 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 max-w-sm">
+          <img src={imgUrl} alt="댓글 이미지" className="max-h-60 w-auto object-cover" />
+        </div>
+      )
+      lastIndex = imgRegex.lastIndex
+    }
+
+    const postText = text.substring(lastIndex)
+    if (postText) {
+      parts.push(<span key={`txt-${lastIndex}`} className="whitespace-pre-wrap">{postText}</span>)
+    }
+
+    return parts.length > 0 ? <div className="space-y-1">{parts}</div> : <span className="whitespace-pre-wrap">{text}</span>
+  }
 
   // 댓글 트리 구조 생성 (부모 ID 기준 매핑)
   const parentComments = comments.filter(c => c.parent_id === null)
@@ -196,9 +269,9 @@ export default function CommentSection({ postId, comments, currentUserId }: Comm
               )}
             </div>
 
-            <p className="text-sm leading-relaxed text-[#1A1D24] dark:text-[#F1F5F9] whitespace-pre-wrap">
-              {comment.content}
-            </p>
+            <div className="text-sm leading-relaxed text-[#1A1D24] dark:text-[#F1F5F9]">
+              {renderCommentContent(comment.content)}
+            </div>
           </div>
         </div>
 
@@ -212,7 +285,7 @@ export default function CommentSection({ postId, comments, currentUserId }: Comm
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 placeholder="답글을 작성해 주세요 (최소 2자)..."
-                className="block w-full rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-sm text-[#1A1D24] focus:border-[#2563EB] focus:outline-none focus:ring-1 focus:ring-[#2563EB] dark:border-[#334155] dark:bg-[#0B111E] dark:text-[#F1F5F9]"
+                className="block w-full rounded-lg bg-white px-3 py-2 text-sm text-[#1A1D24] focus:border-[#2563EB] focus:outline-none focus:ring-1 focus:ring-[#2563EB] dark:border-[#334155] dark:bg-[#0B111E] dark:text-[#F1F5F9]"
               />
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -235,11 +308,26 @@ export default function CommentSection({ postId, comments, currentUserId }: Comm
                     <span>비밀 댓글</span>
                   </label>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-[#5B6472] hover:bg-gray-100 cursor-pointer dark:bg-[#151E2E] dark:border-[#334155] dark:text-[#94A3B8]">
+                    {replyImageUploading === comment.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Image className="h-3.5 w-3.5" />
+                    )}
+                    <span>사진</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={loading || replyImageUploading !== null}
+                      onChange={(e) => handleFileChange(e, true, comment.id)}
+                    />
+                  </label>
                   <button
                     type="button"
                     onClick={() => setReplyTargetId(null)}
-                    className="rounded-lg bg-white border border-[#E5E8EC] px-3.5 py-1.5 text-xs font-semibold text-[#5B6472] hover:bg-gray-100 dark:bg-[#151E2E] dark:border-[#334155] dark:text-[#94A3B8]"
+                    className="rounded-lg bg-white px-3.5 py-1.5 text-xs font-semibold text-[#5B6472] hover:bg-gray-100 dark:bg-[#151E2E] dark:border-[#334155] dark:text-[#94A3B8]"
                   >
                     취소
                   </button>
@@ -302,7 +390,7 @@ export default function CommentSection({ postId, comments, currentUserId }: Comm
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="비방, 욕설, 광고성 링크는 즉시 조치됩니다. 깨끗한 커뮤니티를 함께 만들어요 (최소 2자)..."
-            className="block w-full rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-sm text-[#1A1D24] focus:border-[#2563EB] focus:outline-none focus:ring-1 focus:ring-[#2563EB] dark:border-[#334155] dark:bg-[#151E2E] dark:text-[#F1F5F9]"
+            className="block w-full rounded-lg bg-white px-3 py-2 text-sm text-[#1A1D24] focus:border-[#2563EB] focus:outline-none focus:ring-1 focus:ring-[#2563EB] dark:border-[#334155] dark:bg-[#151E2E] dark:text-[#F1F5F9]"
           />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -325,14 +413,31 @@ export default function CommentSection({ postId, comments, currentUserId }: Comm
                 <span>비밀 댓글</span>
               </label>
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center justify-center gap-2 rounded-lg bg-[#16305B] px-6 py-2 text-sm font-semibold text-white hover:bg-[#1E4079] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6]"
-            >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              <span>댓글 등록</span>
-            </button>
+            <div className="flex gap-2">
+              <label className="flex items-center gap-1 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[#5B6472] hover:bg-gray-100 cursor-pointer dark:bg-[#151E2E] dark:border-[#334155] dark:text-[#94A3B8]">
+                {imageUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Image className="h-4 w-4" />
+                )}
+                <span>사진 첨부</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={loading || imageUploading}
+                  onChange={(e) => handleFileChange(e, false, null)}
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={loading || imageUploading}
+                className="flex items-center justify-center gap-2 rounded-lg bg-[#16305B] px-6 py-2 text-sm font-semibold text-white hover:bg-[#1E4079] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6]"
+              >
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                <span>댓글 등록</span>
+              </button>
+            </div>
           </div>
         </form>
       ) : (

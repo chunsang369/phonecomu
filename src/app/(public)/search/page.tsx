@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import SiteHeader from '@/components/layout/site-header'
 import type { Metadata } from 'next'
 import { searchPosts } from '@/lib/queries/search'
 import { getAllBoards } from '@/lib/queries/board'
@@ -32,6 +33,8 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const boardMap = new Map(boards.map((b: any) => [b.id, b]))
 
   return (
+    <>
+    <SiteHeader />
     <main className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between">
       <div className="mx-auto max-w-4xl px-4 py-8 w-full">
         <h1 className="text-xl font-bold">통합 검색</h1>
@@ -121,5 +124,6 @@ export default async function SearchPage({ searchParams }: PageProps) {
       </div>
       <Footer />
     </main>
+    </>
   )
 }

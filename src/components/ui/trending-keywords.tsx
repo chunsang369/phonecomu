@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
 import { getAllBoards } from '@/lib/queries/board'
+import { getTrendingPosts } from '@/lib/queries/post'
 import KeywordRoller from '@/components/ui/keyword-roller'
 
 /**
@@ -10,18 +10,13 @@ import KeywordRoller from '@/components/ui/keyword-roller'
  * - 서버 컴포넌트이므로 기존 <TrendingKeywords /> 자리에 그대로 드롭인 가능.
  */
 export default async function TrendingKeywords() {
-  const supabase = await createClient()
-
-  const [{ data: trending }, boards] = await Promise.all([
-    supabase.rpc('trending_posts', { days: 7, max_rows: 10 }),
-    getAllBoards(),
-  ])
+  const [trending, boards] = await Promise.all([getTrendingPosts(7, 10), getAllBoards()])
 
   if (!trending || trending.length === 0) return null
 
-  const boardMap = new Map(boards.map((b: any) => [b.id, b]))
-  const items = trending.map((t: any) => ({
-    title: t.title as string,
+  const boardMap = new Map(boards.map((b) => [b.id, b]))
+  const items = trending.map((t) => ({
+    title: t.title,
     href: `/board/${boardMap.get(t.board_id)?.slug ?? 'free'}/${t.id}`,
   }))
 

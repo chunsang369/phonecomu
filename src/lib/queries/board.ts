@@ -1,40 +1,45 @@
-import { createClient } from '@/lib/supabase/server'
+import { one, q } from '@/lib/db'
+
+export type Board = {
+  id: number
+  slug: string
+  name: string
+  type: string
+  allow_anonymous: boolean
+  read_min_level: number
+  write_min_level: number
+  description: string | null
+  sort: number
+}
 
 export async function getBoardBySlug(slug: string) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('boards')
-    .select('*')
-    .eq('slug', slug)
-    .single()
-
-  if (error) return null
-  return data
+  try {
+    return await one<Board>('select * from boards where slug = $1', [slug])
+  } catch (e) {
+    console.error('getBoardBySlug 조회 오류:', (e as Error).message)
+    return null
+  }
 }
 
 export async function getAllBoards() {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('boards')
-    .select('*')
-    .order('sort')
-
-  if (error) return []
-  return data
+  try {
+    return await q<Board>('select * from boards order by sort, id')
+  } catch (e) {
+    console.error('getAllBoards 조회 오류:', (e as Error).message)
+    return []
+  }
 }
 
 export async function getTopUsers(limit: number = 5) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('public_profiles')
-    .select('id, username, display_name, level, adopted_count, trust_score')
-    .order('level', { ascending: false })
-    .order('adopted_count', { ascending: false })
-    .limit(limit)
-
-  if (error) {
-    console.error('getTopUsers 조회 오류:', error)
+  try {
+    return await q(
+      `select id, username, display_name, level, adopted_count, trust_score
+         from profiles where status = 'active'
+        order by level desc, adopted_count desc limit $1`,
+      [limit],
+    )
+  } catch (e) {
+    console.error('getTopUsers 조회 오류:', (e as Error).message)
     return []
   }
-  return data
 }

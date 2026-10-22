@@ -7,9 +7,10 @@ import { CalendarCheck, Loader2 } from 'lucide-react'
 interface AttendanceButtonProps {
   initialDays: number
   hasAttendedToday: boolean
+  variant?: 'block' | 'text' // text: 홈 프로필 카드 하단 링크줄용
 }
 
-export default function AttendanceButton({ initialDays, hasAttendedToday }: AttendanceButtonProps) {
+export default function AttendanceButton({ initialDays, hasAttendedToday, variant = 'block' }: AttendanceButtonProps) {
   const [days, setDays] = useState(initialDays)
   const [attended, setAttended] = useState(hasAttendedToday)
   const [loading, setLoading] = useState(false)
@@ -30,11 +31,19 @@ export default function AttendanceButton({ initialDays, hasAttendedToday }: Atte
         setAttended(true)
         alert('출석체크 성공! 5포인트가 적립되었습니다.')
       }
-    } catch (err) {
+    } catch {
       alert('출석체크 처리 도중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (variant === 'text') {
+    return (
+      <button type="button" onClick={handleAttendance} disabled={loading} className={`py-1 ${attended ? 'text-[#5707EB] dark:text-[#A78BFA]' : 'hover:text-[#5707EB]'}`}>
+        {loading ? '처리 중' : attended ? '출석완료' : '출석체크'}
+      </button>
+    )
   }
 
   return (
@@ -44,7 +53,7 @@ export default function AttendanceButton({ initialDays, hasAttendedToday }: Atte
       className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition disabled:opacity-80 ${
         attended 
           ? 'bg-emerald-600 dark:bg-emerald-700' 
-          : 'bg-[#16305B] hover:bg-[#1E4079] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6]'
+          : 'bg-[#5707EB] hover:bg-[#4E07D2] dark:bg-[#A78BFA] dark:text-[#14082E]'
       }`}
     >
       {loading ? (

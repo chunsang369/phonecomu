@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createPost } from '@/lib/actions/post'
 import { AlertCircle, Loader2 } from 'lucide-react'
+import RichEditor from '@/components/editor/rich-editor'
+import { htmlToText } from '@/lib/sanitize-html'
 
 interface Board {
   id: number
@@ -23,13 +25,8 @@ export default function WriteForm({ board }: WriteFormProps) {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // 정보게시판(info)인 경우 AEO 템플릿 강제 주입
-  const getInitialContent = () => {
-    if (board.slug === 'info') {
-      return `[질문/주제 개요]\n여기에 마케팅 또는 휴대폰 관련 질문이나 주제 요약을 한 줄로 입력하세요.\n\n[핵심 답변 요약 (Answer-First)]\n여기에 AI 답변 엔진(AEO)이 즉각 수집할 수 있도록 핵심 답변 또는 결론을 2~3줄 내로 요약하여 기재하세요.\n\n[상세 내용 및 실경험 근거]\n여기에 상세 설명 및 세부 비교 수치, 실제 경험담을 자유롭게 기재하세요.`
-    }
-    return ''
-  }
+  // 이전에는 휴대폰정보나눔에 AEO 템플릿을 자동 주입했으나, 사용자 요청으로 제거함 (빈 본문으로 시작)
+  const getInitialContent = () => ''
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState(getInitialContent())
@@ -47,8 +44,11 @@ export default function WriteForm({ board }: WriteFormProps) {
       return
     }
 
-    if (content.trim().length < 5) {
-      setErrorMsg('본물은 최소 5자 이상 입력해야 합니다.')
+    // HTML 태그를 제외한 실제 텍스트 기준으로 검증 (이미지/표/동영상만 있는 글은 허용)
+    const plainText = htmlToText(content)
+    const hasMedia = /<(img|table|iframe|video)\b/i.test(content)
+    if (plainText.trim().length < 5 && !hasMedia) {
+      setErrorMsg('본문은 최소 5자 이상 입력해야 합니다.')
       setLoading(false)
       return
     }
@@ -70,7 +70,7 @@ export default function WriteForm({ board }: WriteFormProps) {
         router.push(`/board/${board.slug}/${res.postId}`)
         router.refresh()
       }
-    } catch (err) {
+    } catch {
       setErrorMsg('글 작성 중 예상치 못한 오류가 발생했습니다.')
     } finally {
       setLoading(false)
@@ -78,17 +78,8 @@ export default function WriteForm({ board }: WriteFormProps) {
   }
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-md border border-[#E5E8EC] dark:bg-[#151E2E] dark:border-[#334155]">
-      <div className="mb-6 border-b border-[#E5E8EC] pb-4 dark:border-[#334155]">
-        <h1 className="text-2xl font-bold text-[#16305B] dark:text-[#38BDF8]">
-          {board.name} 글쓰기
-        </h1>
-        {board.description && (
-          <p className="mt-1 text-sm text-[#5B6472] dark:text-[#94A3B8]">
-            {board.description}
-          </p>
-        )}
-      </div>
+    <div className="bg-white px-3 pt-3 pb-24 md:rounded-xl md:px-6 md:pt-6 md:pb-6 md:shadow-md md:border md:border-[#E5E8EC] dark:bg-[#151E2E] dark:md:border-[#334155]">
+
 
       {errorMsg && (
         <div className="mb-6 flex items-center gap-2 rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
@@ -115,17 +106,13 @@ export default function WriteForm({ board }: WriteFormProps) {
         </div>
 
         <div>
-          <label htmlFor="content" className="block text-sm font-medium text-[#1A1D24] dark:text-[#F1F5F9]">
-            내용 {board.slug === 'info' && <span className="text-xs text-[#2563EB] dark:text-[#38BDF8]">(AEO 답변 템플릿 포함)</span>}
+          <label className="block text-sm font-medium text-[#1A1D24] dark:text-[#F1F5F9] mb-1">
+            내용
           </label>
-          <textarea
-            id="content"
-            required
+          <RichEditor
+            initialValue={getInitialContent()}
+            onChange={setContent}
             disabled={loading}
-            rows={12}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-[#E5E8EC] bg-white px-3 py-2 text-sm text-[#1A1D24] focus:border-[#2563EB] focus:outline-none focus:ring-1 focus:ring-[#2563EB] disabled:bg-gray-100 dark:border-[#334155] dark:bg-[#0B111E] dark:text-[#F1F5F9] dark:focus:border-[#3B82F6]"
             placeholder="내용을 입력하세요 (최소 5자)"
           />
         </div>

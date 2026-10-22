@@ -1,19 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 
+// Supabase OAuth 콜백은 자체 인증 전환으로 사용하지 않는다. 기존 링크로 들어오면 로그인 화면으로 보낸다.
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
-
-  if (code) {
-    const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
-    }
-  }
-
-  // 에러가 발생한 경우 로그인 페이지로 에러 표시 리다이렉트
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+  const { origin } = new URL(request.url)
+  return NextResponse.redirect(`${origin}/login`)
 }

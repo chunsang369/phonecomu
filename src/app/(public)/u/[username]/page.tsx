@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import SiteHeader from '@/components/layout/site-header'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getPublicProfile, getPostsByAuthor } from '@/lib/queries/profile'
@@ -59,6 +60,8 @@ export default async function ProfilePage({ params }: PageProps) {
   }
 
   return (
+    <>
+    <SiteHeader />
     <main className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -156,5 +159,6 @@ export default async function ProfilePage({ params }: PageProps) {
       </div>
       <Footer />
     </main>
+    </>
   )
 }

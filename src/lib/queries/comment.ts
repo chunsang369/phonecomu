@@ -1,58 +1,105 @@
-import { createClient } from '@/lib/supabase/server'
+import { q } from '@/lib/db'
+import { getCurrentProfile } from '@/lib/auth/session'
 
-/**
- * 게시글 댓글 조회 — 보안 원칙 준수 버전
- * ① 공개 댓글: public_comments 뷰 (작성자 조인·익명 마스킹이 DB 레벨에서 완료됨)
- * ② 비밀댓글: comments base 테이블 (RLS가 작성자/글쓴이/스태프만 통과시킴)
- * 앱 레벨 마스킹·클라이언트 조인 금지 — 익명성은 DB에서 지킨다.
- */
+type CommentRow = {
+  id: string
+  post_id: string
+  parent_id: string | null
+  content: string
+  upvotes: number
+  created_at: string
+  is_anonymous: boolean
+  is_secret: boolean
+  author_id: string | null
+  post_author_id: string | null
+  username: string | null
+  display_name: string | null
+  avatar_url: string | null
+  level: number | null
+}
+
+/** 홈 '새댓글' 목록: 공개 게시판의 공개 댓글 최신순 (비밀댓글 제외) */
+export async function getRecentComments(limit = 8) {
+  try {
+    return await q<{ id: string; content: string; created_at: string; post_id: string; board_slug: string }>(
+      `select c.id, c.content, c.created_at, c.post_id, b.slug as board_slug
+         from comments c
+         join posts p on p.id = c.post_id and p.status = 'published'
+         join boards b on b.id = p.board_id and b.read_min_level <= 0
+        where c.status = 'published' and not c.is_secret
+        order by c.created_at desc limit $1`,
+      [limit],
+    )
+  } catch (e) {
+    console.error('getRecentComments 조회 오류:', (e as Error).message)
+    return []
+  }
+}
+
 export async function getCommentsForPost(postId: string) {
-  const supabase = await createClient()
-
-  // ① 공개 댓글 (뷰: 익명이면 author_id NULL + anon_tag 제공)
-  const { data: publicComments, error: pubErr } = await supabase
-    .from('public_comments')
-    .select('id, post_id, parent_id, content, upvotes, created_at, is_anonymous, author_id, author_username, author_display_name, author_avatar_url, author_level, anon_tag')
-    .eq('post_id', postId)
-    .order('created_at', { ascending: true })
-
-  if (pubErr) {
-    console.error('getCommentsForPost(공개) 조회 오류:', pubErr)
+  let comments: CommentRow[]
+  try {
+    comments = await q<CommentRow>(
+      `select c.id, c.post_id, c.parent_id, c.content, c.upvotes, c.created_at, c.is_anonymous, c.is_secret,
+              c.author_id, po.author_id as post_author_id,
+              a.username, a.display_name, a.avatar_url, a.level
+         from comments c
+         join posts po on po.id = c.post_id
+         left join profiles a on a.id = c.author_id
+        where c.post_id = $1 and c.status = 'published'
+        order by c.created_at asc`,
+      [postId],
+    )
+  } catch (e) {
+    console.error('getCommentsForPost 조회 오류:', (e as Error).message)
     return []
   }
 
-  // ② 비밀댓글 (base: RLS가 관련자 외 자동 차단 — 비관련자는 빈 배열)
-  const { data: secretComments } = await supabase
-    .from('comments')
-    .select('id, post_id, parent_id, content, upvotes, created_at, is_anonymous, is_secret, author_id')
-    .eq('post_id', postId)
-    .eq('is_secret', true)
-    .eq('status', 'published')
-    .order('created_at', { ascending: true })
+  // 비밀댓글: 관리자·댓글 작성자·원글 작성자만 본문 열람
+  const me = await getCurrentProfile()
+  const isStaff = me?.role === 'admin' || me?.role === 'moderator'
 
-  const mapped = [
-    ...(publicComments ?? []).map((c) => ({
-      ...c,
-      is_secret: false,
-      author: c.author_id
-        ? {
-            id: c.author_id,
-            username: c.author_username,
-            display_name: c.author_display_name,
-            avatar_url: c.author_avatar_url,
-            level: c.author_level,
-          }
-        : null,
-    })),
-    ...(secretComments ?? []).map((c) => ({
-      ...c,
-      anon_tag: null,
-      author: c.author_id ? { id: c.author_id, username: '', display_name: '비밀댓글', avatar_url: null, level: 1 } : null,
-    })),
-  ]
+  // 익명 작성자별 고유 번호 (익명1, 익명2 …)
+  const anonMap = new Map<string, string>()
+  let anonCounter = 1
 
-  // 생성 시각 기준 재정렬 (트리 구성은 컴포넌트에서 parent_id로)
-  return mapped.sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  )
+  return comments.map((c) => {
+    let displayName: string
+    let author: { id: string; username: string; display_name: string; avatar_url: string | null; level: number } | null
+
+    if (c.is_anonymous) {
+      let tag = '익명'
+      if (c.author_id) {
+        if (!anonMap.has(c.author_id)) anonMap.set(c.author_id, `익명${anonCounter++}`)
+        tag = anonMap.get(c.author_id)!
+      }
+      displayName = tag
+      author = { id: '', username: '', display_name: tag, avatar_url: null, level: 1 }
+    } else {
+      displayName = c.display_name || '성지회원'
+      author = c.author_id
+        ? { id: c.author_id, username: c.username ?? '', display_name: displayName, avatar_url: c.avatar_url, level: c.level ?? 1 }
+        : null
+    }
+
+    const canSeeSecret = !c.is_secret || isStaff || (!!me && (me.id === c.author_id || me.id === c.post_author_id))
+
+    return {
+      id: c.id,
+      post_id: c.post_id,
+      parent_id: c.parent_id,
+      content: canSeeSecret ? c.content : '비밀댓글입니다.',
+      upvotes: c.upvotes,
+      created_at: c.created_at,
+      is_anonymous: c.is_anonymous,
+      is_secret: c.is_secret,
+      author_id: c.is_anonymous ? null : c.author_id,
+      author_username: c.is_anonymous ? '' : c.username,
+      author_display_name: displayName,
+      author_avatar_url: c.is_anonymous ? null : c.avatar_url,
+      author_level: c.is_anonymous ? 1 : c.level,
+      anon_tag: c.is_anonymous ? displayName : null,
+      author,
+    }
+  })
 }

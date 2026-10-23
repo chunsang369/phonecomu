@@ -27,6 +27,11 @@ function getPool() {
       keepAlive: true,
       connectionTimeoutMillis: 8_000,
     })
+    // PgBouncer can close an idle socket; pg removes it and opens a new one on demand.
+    // Do not dump the client object (connection settings) into application logs.
+    g.__pcPool.on('error', (error: Error & { code?: string }) => {
+      console.error('PostgreSQL idle connection closed:', error.code || error.name)
+    })
   }
   return g.__pcPool
 }

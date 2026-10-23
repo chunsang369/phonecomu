@@ -110,23 +110,6 @@ export default async function Home() {
                 <ChevronRight className="h-4 w-4" />
               </span>
             </Link>
-            {/* 사이트 소개: 페이지 유일한 H1 + 바로 아래 직접 답 문단 */}
-            <section className="rounded-lg bg-white px-4 py-5 sm:px-[30px] dark:bg-[#111827]">
-              <h1 className="text-[20px] font-extrabold tracking-[-0.4px] text-black dark:text-white">휴대폰 성지 평가 커뮤니티 {SITE_NAME}</h1>
-              <p data-seo="answer" className="mt-2 text-[15px] leading-[1.7] text-[#444] dark:text-slate-300">
-                {SITE_NAME}는 휴대폰 성지(핸드폰 성지)에서 실제로 개통한 조건을 구매자가 남기고, 요금제 유지·부가서비스 비용까지 더한 실구매가와 약속 이행률로 매장을 비교하는 커뮤니티입니다. 휴대폰을 싸게 사는 법과 공시지원금·선택약정 비교 방법도 가이드로 정리해 두었습니다.
-              </p>
-              <nav aria-label="휴대폰 구매 가이드" className="mt-3 flex flex-wrap gap-2">
-                {GUIDE_CHIPS.map((g) => (
-                  <Link key={g.href} href={g.href} className="rounded-full border border-[#E0E0E0] px-3 py-1.5 text-[13px] font-bold text-[#454545] hover:border-[#5707EB] hover:text-[#5707EB] dark:border-slate-700 dark:text-slate-200">
-                    {g.label}
-                  </Link>
-                ))}
-                <Link href="/guide" className="flex items-center rounded-full bg-[#F3EEFF] px-3 py-1.5 text-[13px] font-bold text-[#5707EB] dark:bg-[#2A1366] dark:text-[#C4B5FD]">
-                  가이드 전체 <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
-              </nav>
-            </section>
             <MainTabbedFeed initialPosts={unifiedPosts} />
           </div>
 
@@ -160,6 +143,24 @@ export default async function Home() {
             </Link>
           </div>
         </div>
+
+        {/* 사이트 소개(하단): 페이지 유일한 H1 + 바로 아래 직접 답 문단 — 첫 화면은 피드·광고 위주로 두고 검색·AI용 설명은 아래에 둔다 */}
+        <section className="mt-8 border-t border-[#E5E8EC] px-1 pt-6 dark:border-[#1F2937]">
+          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#333] dark:text-slate-200">휴대폰 성지 평가 커뮤니티 {SITE_NAME}</h1>
+          <p data-seo="answer" className="mt-1.5 max-w-[900px] text-[13px] leading-[1.7] text-[#777] dark:text-slate-400">
+            {SITE_NAME}는 휴대폰 성지(핸드폰 성지)에서 실제로 개통한 조건을 구매자가 남기고, 요금제 유지·부가서비스 비용까지 더한 실구매가와 약속 이행률로 매장을 비교하는 커뮤니티입니다. 휴대폰을 싸게 사는 법과 공시지원금·선택약정 비교 방법도 가이드로 정리해 두었습니다.
+          </p>
+          <nav aria-label="휴대폰 구매 가이드" className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px]">
+            {GUIDE_CHIPS.map((g) => (
+              <Link key={g.href} href={g.href} className="text-[#555] hover:text-[#5707EB] hover:underline dark:text-slate-300">
+                {g.label}
+              </Link>
+            ))}
+            <Link href="/guide" className="flex items-center font-bold text-[#5707EB] hover:underline dark:text-[#C4B5FD]">
+              가이드 전체 <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          </nav>
+        </section>
       </main>
 
       <Footer />

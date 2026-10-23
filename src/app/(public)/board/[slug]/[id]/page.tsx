@@ -11,6 +11,7 @@ import { getCommentsForPost } from '@/lib/queries/comment'
 import { getCurrentProfile } from '@/lib/auth/session'
 import { getTrendingPosts } from '@/lib/queries/post'
 import { Metadata } from 'next'
+import { cache } from 'react'
 import PostContent from '@/components/ui/post-content'
 import { htmlToText } from '@/lib/sanitize-html'
 import VoteButtons from '@/components/ui/vote-buttons'
@@ -24,13 +25,16 @@ import JsonLd from '@/components/seo/json-ld'
 import { breadcrumbSchema, discussionPostingSchema } from '@/lib/seo/schema'
 import { pageMeta } from '@/lib/seo/metadata'
 
+// generateMetadata와 본문이 같은 요청에서 글을 한 번만 조회하도록
+const loadPost = cache(getPostDetail)
+
 interface PageProps {
   params: Promise<{ slug: string; id: string }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug, id } = await params
-  const post = await getPostDetail(id)
+  const post = await loadPost(id)
 
   if (!post) return { title: '게시글을 찾을 수 없습니다.' }
 
@@ -46,32 +50,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PostDetailPage({ params }: PageProps) {
   const { slug, id } = await params
-  const board = await getBoardBySlug(slug)
-  const post = await getPostDetail(id)
+  const [board, post] = await Promise.all([getBoardBySlug(slug), loadPost(id)])
 
   if (!board || !post) {
     notFound()
   }
 
-  // 1. 세션 유저 취득
-  const profile = await getCurrentProfile()
+  // 로그인 정보·투표 쿠키·댓글·하단 목록·게시판 탭·작성자 다른 글·인기글을 한 번에 조회 (순서대로 기다리면 DB 왕복이 7번 쌓임)
+  const [profile, cookieStore, comments, siblingPosts, allBoards, authorPosts, trendingRaw] = await Promise.all([
+    getCurrentProfile(),
+    cookies(),
+    getCommentsForPost(id),
+    getPostsByBoard(board.id, 15),
+    getAllBoards(),
+    !post.is_anonymous && post.author_id
+      ? import('@/lib/queries/profile').then(({ getPostsByAuthor }) => getPostsByAuthor(post.author_id!, 5))
+      : Promise.resolve([]),
+    getTrendingPosts(14, 5),
+  ])
   const user = profile ? { id: profile.id } : null
 
   // 이 브라우저가 이 게시글에 이미 던진 표 (쿠키 기반 공개 투표)
-  const cookieStore = await cookies()
   const myVoteRaw = cookieStore.get(`pv_${post.id}`)?.value
   const initialMyVote: 1 | -1 | 0 = myVoteRaw === '1' ? 1 : myVoteRaw === '-1' ? -1 : 0
 
   const userLevel = profile?.level || 0
-
-  // 2. 실시간 댓글 로드
-  const comments = await getCommentsForPost(id)
-
-  // 3. 하단 목록용 전체 게시글 조회
-  const siblingPosts = await getPostsByBoard(board.id, 15)
-
-  // 4. 전체 게시판들 조회 (GNB LNB용)
-  const allBoards = await getAllBoards()
   const activeBoards = allBoards.filter((b) => ['free', 'info', 'anonymous', 'coordinate', 'qna'].includes(b.slug))
 
   const canWrite = userLevel >= board.write_min_level
@@ -93,16 +96,10 @@ export default async function PostDetailPage({ params }: PageProps) {
     }
   }
 
-  // 5. 작성자의 다른 최신글 조회 (익명이 아닐 때만)
-  let authorRecentPosts: any[] = []
-  if (!post.is_anonymous && post.author_id) {
-    const { getPostsByAuthor } = await import('@/lib/queries/profile')
-    const authorPosts = await getPostsByAuthor(post.author_id, 5)
-    authorRecentPosts = authorPosts.filter((p: any) => p.id !== post.id)
-  }
+  // 작성자의 다른 최신글 (익명이 아닐 때만 조회됨)
+  const authorRecentPosts = authorPosts.filter((p) => p.id !== post.id)
 
-  // 6. 연관 추천 게시글 조회 (실제 인기글 연동)
-  const trendingRaw = await getTrendingPosts(14, 5)
+  // 연관 추천 게시글 (실제 인기글 연동)
   const relatedAiPosts = trendingRaw
     .filter((p: any) => p.id !== post.id)
     .slice(0, 4)

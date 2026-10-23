@@ -52,17 +52,17 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
     notFound()
   }
 
-  // 1. 게시판들 전체 조회 (서브 카테고리 탭 생성용)
-  const allBoards = await getAllBoards()
+  // 게시판 탭(메모리 캐시)·글 목록·로그인 정보를 한 번에 조회 — 순서대로 기다리면 DB 왕복이 그만큼 늘어난다
+  const [allBoards, { posts, totalCount }, profile] = await Promise.all([
+    getAllBoards(),
+    getPaginatedPostsByBoard(board.id, currentPage, pageSize),
+    getCurrentProfile(),
+  ])
   const activeBoards = allBoards.filter((b) => ['free', 'info', 'anonymous', 'coordinate', 'qna'].includes(b.slug))
-
-  // 2. 게시글 목록 로드 (페이지네이션 적용)
-  const { posts, totalCount } = await getPaginatedPostsByBoard(board.id, currentPage, pageSize)
   const totalPages = Math.ceil(totalCount / pageSize) || 1
   if (currentPage > totalPages) notFound()
 
-  // 3. 로그인 유저 권한 조회
-  const profile = await getCurrentProfile()
+  // 로그인 유저 권한
   const user = profile ? { id: profile.id } : null
   const userLevel = profile?.level || 0
 

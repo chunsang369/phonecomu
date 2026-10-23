@@ -20,8 +20,10 @@ function getPool() {
     g.__pcPool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: true },
-      max: 5,
-      idleTimeoutMillis: 30_000,
+      max: 10, // 홈처럼 여러 게시판을 동시에 읽는 화면에서 대기·새 연결이 생기지 않게
+      // Contabo까지 TLS 새 연결은 약 300ms(쿼리 1회는 약 40ms) → 유휴 연결을 10분 유지해 재연결을 줄인다
+      idleTimeoutMillis: 600_000,
+      keepAlive: true,
       connectionTimeoutMillis: 8_000,
     })
   }

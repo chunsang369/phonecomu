@@ -3,6 +3,7 @@ import "./globals.css";
 import { SITE_URL } from "@/lib/site-url";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo/schema";
 import { baseOpenGraph } from "@/lib/seo/metadata";
+import NavigationProgress from "@/components/ui/navigation-progress";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -30,7 +31,7 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><NavigationProgress />{children}</body>
     </html>
   );
 }

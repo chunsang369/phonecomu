@@ -15,36 +15,44 @@ import { Metadata } from 'next'
 import AnonBadge from '@/components/ui/anon-badge'
 import Footer from '@/components/ui/footer'
 import WriteButton from '@/components/ui/write-button'
+import { isDemo } from '@/lib/demo/runtime.mjs'
+import { regions,carriers } from '@/lib/demo/catalog.mjs'
 
 interface PageProps {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string;q?:string;region?:string;carrier?:string;sort?:string }>
 }
 
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const { page } = await searchParams
+  const { page, ...filters } = await searchParams
   const board = await getBoardBySlug(slug)
 
   if (!board) return { title: '게시판을 찾을 수 없습니다.' }
 
-  // 페이지마다 자기 자신을 canonical로 (2쪽 이상은 ?page=N)
+  // 페이지마다 자기 자신을 canonical로 (2쪽 이상은 ?page=N), 검색·필터 결과는 색인하지 않음
   const n = parseInt(page || '1', 10)
-  return pageMeta({
-    title: n > 1 ? `${board.name} ${n}페이지` : board.name,
-    description: BOARD_INTRO[slug] || board.description || `${board.name} 게시판 목록입니다.`,
-    path: n > 1 ? `/board/${slug}?page=${n}` : `/board/${slug}`,
-  })
+  const path = n > 1 ? `/board/${slug}?page=${n}` : `/board/${slug}`
+  const filtered = Object.values(filters).some(Boolean)
+  return {
+    ...pageMeta({
+      title: n > 1 ? `${board.name} ${n}페이지` : board.name,
+      description: BOARD_INTRO[slug] || board.description || `${board.name} 게시판 목록입니다.`,
+      path,
+    }),
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+  }
 }
 
 export default async function BoardPage({ params, searchParams }: PageProps) {
   const { slug } = await params
-  const { page } = await searchParams
+  const { page,...filters } = await searchParams
   // ?page=1 은 기본 주소로 영구 이동, 숫자가 아닌 page 값은 404 (중복·무한 URL 방지)
   if (page !== undefined && !/^[1-9]\d{0,4}$/.test(page)) notFound()
-  if (page === '1') permanentRedirect(`/board/${slug}`)
-  const currentPage = parseInt(page || '1', 10)
-  const pageHref = (p: number) => (p === 1 ? `/board/${slug}` : `/board/${slug}?page=${p}`)
+  const filterQuery = new URLSearchParams(Object.entries(filters).filter((v):v is [string,string]=>!!v[1])).toString()
+  if (page === '1') permanentRedirect(`/board/${slug}${filterQuery ? '?' + filterQuery : ''}`)
+  const currentPage = Math.max(1,Math.min(10000,parseInt(page || '1',10)||1))
+  const pageHref = (p:number) => p === 1 ? `/board/${slug}${filterQuery?'?'+filterQuery:''}` : `/board/${slug}?page=${p}${filterQuery?'&'+filterQuery:''}`
   const pageSize = 15
   const board = await getBoardBySlug(slug)
 
@@ -55,10 +63,10 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
   // 게시판 탭(메모리 캐시)·글 목록·로그인 정보를 한 번에 조회 — 순서대로 기다리면 DB 왕복이 그만큼 늘어난다
   const [allBoards, { posts, totalCount }, profile] = await Promise.all([
     getAllBoards(),
-    getPaginatedPostsByBoard(board.id, currentPage, pageSize),
+    getPaginatedPostsByBoard(board.id, currentPage, pageSize, filters),
     getCurrentProfile(),
   ])
-  const activeBoards = allBoards.filter((b) => ['free', 'info', 'anonymous', 'coordinate', 'qna'].includes(b.slug))
+  const activeBoards = allBoards.filter((b) => ['free', 'info', 'anonymous', 'coordinate', 'qna','review','politics'].includes(b.slug))
   const totalPages = Math.ceil(totalCount / pageSize) || 1
   if (currentPage > totalPages) notFound()
 
@@ -135,6 +143,7 @@ export default async function BoardPage({ params, searchParams }: PageProps) {
               ) : null}
             </div>
 
+            {isDemo()&&<form className="mt-5 flex flex-wrap gap-2" role="search"><input name="q" aria-label="게시판 검색" placeholder="제목 또는 본문 검색" defaultValue={filters.q} className="min-w-0 flex-1 rounded-lg border bg-transparent p-2 text-sm"/><select name="region" aria-label="지역 필터" defaultValue={filters.region||''} className="rounded-lg border bg-transparent p-2 text-sm">{['',...regions].map(r=><option key={r} value={r}>{r||'모든 지역'}</option>)}</select><select name="carrier" aria-label="통신사 필터" defaultValue={filters.carrier||''} className="rounded-lg border bg-transparent p-2 text-sm">{['',...carriers].map(c=><option key={c} value={c}>{c||'모든 통신사'}</option>)}</select><select name="sort" aria-label="게시글 정렬" defaultValue={filters.sort||'latest'} className="rounded-lg border bg-transparent p-2 text-sm"><option value="latest">최신순</option><option value="popular">인기순</option><option value="recommended">추천순</option></select><button className="rounded-lg bg-[#5707EB] px-4 py-2 text-sm text-white">적용</button><span className="w-full text-xs text-slate-400">검색 결과 {totalCount.toLocaleString()}건</span></form>}
             {/* 분류 알약 버튼 (선택: 검정 바탕) */}
             <nav aria-label="게시판" className="mt-5 flex flex-wrap gap-2">
               <Link href="/" className="flex h-9 items-center rounded-full border border-[#DDD] px-4 text-[14px] text-[#666] hover:border-[#999] dark:border-slate-700 dark:text-slate-300">

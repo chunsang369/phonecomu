@@ -1,0 +1,16 @@
+[Unit]
+Description=Continuously drain stored community manuscripts through rewrite and review
+After=network-online.target
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/phone-community-demo
+Environment=PHONE_DEMO=1
+Environment=PHONE_DEMO_DB=/var/lib/phone-community-demo/community.sqlite
+Environment=GEMINI_MODEL=gemini-3.1-flash-lite
+Environment=PHONE_AGY_ENABLED=0
+LoadCredentialEncrypted=gemini:/etc/credstore.encrypted/phone-community-gemini
+ExecStart=/usr/bin/flock -n /var/lib/phone-community-demo/rewrite.lock /usr/bin/node demo/rewrite-worker.mjs
+TimeoutStartSec=7min
+UMask=0077
+[Install]
+WantedBy=multi-user.target

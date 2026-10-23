@@ -26,6 +26,7 @@ const NAV_ACCENT = [
 ]
 
 export default async function SiteHeader({ active, writeSlug = 'free' }: { active?: string; writeSlug?: string }) {
+  const demo = process.env.PHONE_DEMO === '1'
   // DB 장애 시에도 헤더 때문에 페이지 전체가 늦어지지 않도록 2초 제한
   const user = await Promise.race([getCurrentProfile(), new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))])
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || '폰커뮤니티'
@@ -76,7 +77,7 @@ export default async function SiteHeader({ active, writeSlug = 'free' }: { activ
             <Calculator className="h-4 w-4" /> 요금계산기
           </Link>
           <span className="mx-2 hidden h-4 w-px bg-[#DDD] lg:block" />
-          {user ? (
+          {demo ? <Link href={`/demo/write?board=${writeSlug}`} className="rounded-lg bg-[#5707EB] px-3 py-2 text-sm font-semibold text-white">글쓰기</Link> : user ? (
             <>
               <Link
                 href="/mypage"
@@ -118,6 +119,7 @@ export default async function SiteHeader({ active, writeSlug = 'free' }: { activ
               {n.label}
             </Link>
           ))}
+          <><Link href="/board/review" className={navCls(active==='review')}>구매 후기</Link><Link href="/board/politics" className={navCls(active==='politics')}>정치·시사</Link></>
           <span aria-hidden className="my-auto h-3.5 w-px shrink-0 bg-[#DDD]" />
           {NAV_ACCENT.map((n) => (
             <Link key={n.key} href={n.href} aria-current={active === n.key ? 'page' : undefined} className={navCls(active === n.key, true)}>

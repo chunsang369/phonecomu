@@ -15,6 +15,7 @@ const ANSWER_BOTS = ['OAI-SearchBot', 'ChatGPT-User', 'Claude-SearchBot', 'Claud
 const TRAINING_BOTS = ['GPTBot', 'ClaudeBot', 'Google-Extended', 'CCBot']
 
 export default function robots(): MetadataRoute.Robots {
+  if(process.env.PHONE_DEMO==='1')return {rules:{userAgent:'*',disallow:'/'}}
   return {
     rules: [
       { userAgent: '*', allow: '/', disallow: DISALLOW },

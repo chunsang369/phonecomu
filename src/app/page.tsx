@@ -9,6 +9,7 @@ import SideTabs from '@/components/home/side-tabs'
 import { getAllBoards } from '@/lib/queries/board'
 import { getPostsByBoard, type PostRow } from '@/lib/queries/post'
 import { getRecentComments } from '@/lib/queries/comment'
+import { isDemo } from '@/lib/demo/runtime.mjs'
 import JsonLd from '@/components/seo/json-ld'
 import { siteGraph, SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo/schema'
 import { pageMeta } from '@/lib/seo/metadata'
@@ -29,7 +30,6 @@ const GUIDE_CHIPS = [
   { href: '/guide/contract-checklist', label: '개통 전 계약서 체크리스트' },
 ]
 
-
 // 피드에 쓰는 짧은 게시판 이름 (아이보스: 자유·행사정보 등 2~4자)
 const SHORT: Record<string, string> = {
   info: '정보공유',
@@ -39,6 +39,7 @@ const SHORT: Record<string, string> = {
   coordinate: '진짜성지',
   notice: '공지',
   review: '성지후기',
+  politics: '정치·시사',
 }
 
 // 가운데 바로가기 카드 (아이보스: 180×62, 15px bold)
@@ -58,7 +59,7 @@ export default async function Home() {
   ])
 
   // 통합 피드
-  const boards = allBoards.filter((b) => ['free', 'info', 'anonymous', 'coordinate', 'qna', 'notice', 'review'].includes(b.slug))
+  const boards = allBoards.filter((b) => ['free', 'info', 'anonymous', 'coordinate', 'qna', 'notice', 'review', 'politics'].includes(b.slug))
   const perBoard = await Promise.all(
     boards.map(async (b) =>
       (await getPostsByBoard(b.id, 60)).map((p: PostRow) => ({
@@ -115,7 +116,7 @@ export default async function Home() {
 
           {/* ── 가운데: 바로가기 카드 ── */}
           <nav aria-label="바로가기" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:flex lg:flex-col">
-            {QUICK_LINKS.map(({ href, label, Icon }) => (
+            {(isDemo() ? [...QUICK_LINKS,{href:'/board/politics',label:'정치·시사',Icon:MessageCircle}] : QUICK_LINKS).map(({ href, label, Icon }) => (
               <Link
                 key={href}
                 href={href}

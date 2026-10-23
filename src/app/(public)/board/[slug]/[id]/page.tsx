@@ -21,6 +21,9 @@ import WriteButton from '@/components/ui/write-button'
 import BackButton from '@/components/ui/back-button'
 import ViewCounter from '@/components/ui/view-counter'
 import { cookies } from 'next/headers'
+import { isDemo } from '@/lib/demo/runtime.mjs'
+import { getAdminProvenance } from '@/lib/queries/provenance'
+import DemoPostTools from '@/components/demo/post-tools'
 import JsonLd from '@/components/seo/json-ld'
 import { breadcrumbSchema, discussionPostingSchema } from '@/lib/seo/schema'
 import { pageMeta } from '@/lib/seo/metadata'
@@ -52,7 +55,7 @@ export default async function PostDetailPage({ params }: PageProps) {
   const { slug, id } = await params
   const [board, post] = await Promise.all([getBoardBySlug(slug), loadPost(id)])
 
-  if (!board || !post) {
+  if (!board || !post || board.id !== post.board_id) {
     notFound()
   }
 
@@ -69,6 +72,7 @@ export default async function PostDetailPage({ params }: PageProps) {
     getTrendingPosts(14, 5),
   ])
   const user = profile ? { id: profile.id } : null
+  const provenance = profile?.role === 'admin' ? await getAdminProvenance(id) : null
 
   // 이 브라우저가 이 게시글에 이미 던진 표 (쿠키 기반 공개 투표)
   const myVoteRaw = cookieStore.get(`pv_${post.id}`)?.value
@@ -141,7 +145,7 @@ export default async function PostDetailPage({ params }: PageProps) {
         <div className="min-w-0 space-y-5">
 
           {/* 방문 시 조회수 1 증가 (마운트 트리거) */}
-          <ViewCounter postId={post.id} />
+          {!isDemo() && <ViewCounter postId={post.id} />}
 
           {/* 뒤로가기 */}
           <div>
@@ -201,15 +205,16 @@ export default async function PostDetailPage({ params }: PageProps) {
 
             {/* 본문 (리치 에디터 HTML 또는 레거시 일반 텍스트) */}
             <PostContent content={post.content ?? ""} />
+            {provenance && <div className="rounded-lg bg-purple-50 p-3 text-xs text-purple-800"><a href={provenance.source_url} target="_blank" rel="noopener noreferrer" className="underline">원문 출처 · 윤문·재구성하여 수록</a><span className="ml-2">관리자 전용</span></div>}
 
             {/* 아이보스 특유의 둥근 보라색 좋아요 버튼 */}
             <div className="pt-6 text-center border-t border-slate-100 dark:border-[#1F2937]">
-              <VoteButtons
+              {!isDemo() && <VoteButtons
                 postId={post.id}
                 initialUpvotes={post.upvotes}
                 initialDownvotes={post.downvotes}
                 initialMyVote={initialMyVote}
-              />
+              />}
             </div>
 
             {/* 하단 텍스트 공유 / 신고 기능 바 */}
@@ -253,7 +258,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                     회원 등급: <span className="text-[#5707EB] dark:text-[#A78BFA]">Level {post.is_anonymous ? 1 : (post.author?.level || 1)}</span>
                   </p>
                   <p className="text-[9px] text-[#94A3B8] font-semibold">
-                    {post.is_anonymous ? '익명 게시판 가상 프로필' : '인증 완료 정회원'}
+                    {post.is_anonymous ? '익명 게시판 회원' : '커뮤니티 회원'}
                   </p>
                 </div>
               </div>
@@ -268,7 +273,7 @@ export default async function PostDetailPage({ params }: PageProps) {
                     {authorRecentPosts.map((ap) => (
                       <li key={ap.id}>
                         <Link
-                          href={`/board/free/${ap.id}`}
+                          href={`/board/${allBoards.find(b=>b.id===ap.board_id)?.slug||'free'}/${ap.id}`}
                           className="flex justify-between font-bold text-slate-600 dark:text-slate-300 hover:text-[#5707EB] transition"
                         >
                           <span className="truncate pr-4">{ap.title}</span>
@@ -291,11 +296,11 @@ export default async function PostDetailPage({ params }: PageProps) {
               댓글 {comments.length}
             </h3>
             
-            <CommentSection
+            {isDemo() ? <DemoPostTools postId={post.id} comments={comments}/> : <CommentSection
               postId={post.id}
               comments={comments}
               currentUserId={user?.id || null}
-            />
+            />}
           </div>
 
           {/* AI 추천 연관글 위젯 */}

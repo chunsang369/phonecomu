@@ -15,6 +15,7 @@ types.setTypeParser(1700, (v) => parseFloat(v))
 const g = globalThis as unknown as { __pcPool?: Pool }
 
 function getPool() {
+  if (process.env.PHONE_DEMO === '1') throw new Error('데모 모드에서는 운영 DB에 접근하지 않습니다.')
   if (!g.__pcPool) {
     if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL 미설정 (.env.local)')
     g.__pcPool = new Pool({

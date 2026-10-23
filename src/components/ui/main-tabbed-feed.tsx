@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -29,9 +30,12 @@ const TABS = [
   { id: "free", name: "자유" },
   { id: "anonymous", name: "익명" },
   { id: "coordinate", name: "진짜성지" },
+  {id:'politics',name:'정치·시사'},
 ]
 
 export default function MainTabbedFeed({ initialPosts }: MainTabbedFeedProps) {
+  const router=useRouter()
+  useEffect(()=>{const timer=setInterval(()=>{if(document.visibilityState==='visible')router.refresh()},60000);return()=>clearInterval(timer)},[router])
   const [activeTab, setActiveTab] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const postsPerPage = 8 // 아이보스 홈 피드와 같은 8줄

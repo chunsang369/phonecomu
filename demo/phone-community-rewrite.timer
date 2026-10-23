@@ -1,0 +1,9 @@
+[Unit]
+Description=Resume community rewriting independently of the four daily collections
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=30s
+AccuracySec=1s
+Unit=phone-community-rewrite.service
+[Install]
+WantedBy=timers.target

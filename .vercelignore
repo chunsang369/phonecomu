@@ -8,4 +8,11 @@ scripts/
 .agents/
 README_PPOMPPU.md
 *.tsbuildinfo
+.demo/
+.next-*/
+tmp/
+output/
+**/__pycache__/
+*.pyc
+SHARED_CONTEXT.md
 verify_*.js

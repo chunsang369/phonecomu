@@ -17,7 +17,7 @@
  * ad-config.ts(설정)는 그대로 두고 같은 설계로 다시 작성함.
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { adConfig, AD_SIZES, type AdPlacement } from './ad-config'
 import { AD_SLOTS, type AdSlotId } from '@/lib/ads'
 
@@ -63,6 +63,17 @@ export default function AdSlot({ slot, placement: placementProp, className = '' 
   const house = adConfig.house
 
   const boxRef = useRef<HTMLDivElement>(null)
+  const [renderSize, setRenderSize] = useState(size)
+  useEffect(() => {
+    const box = boxRef.current
+    if (!box) return
+    const observer = new ResizeObserver(([entry]) => {
+      const w = Math.round(entry.contentRect.width), h = Math.round(entry.contentRect.height)
+      if (w > 0 && h > 0) setRenderSize(previous => previous.w === w && previous.h === h ? previous : { w, h })
+    })
+    observer.observe(box)
+    return () => observer.disconnect()
+  }, [useNetwork, size.w, size.h])
 
   useEffect(() => {
     if (!useNetwork) return
@@ -90,10 +101,11 @@ export default function AdSlot({ slot, placement: placementProp, className = '' 
       aria-label="광고"
       data-ad-slot={slot ?? placement}
       className={`relative w-full overflow-hidden rounded-lg bg-white dark:bg-[#111827] ${className}`}
-      style={{ aspectRatio: `${size.w} / ${size.h}`, maxWidth: spec ? undefined : size.w }}
+      style={{ maxWidth: spec ? undefined : size.w }}
     >
+      <div ref={boxRef} className={`relative w-full ${size.w / size.h > 3 ? 'min-h-[140px] sm:min-h-0' : ''}`} style={{ aspectRatio: `${size.w} / ${size.h}` }}>
       {useNetwork && (
-        <div ref={boxRef} id={`ad-${slot ?? placement}`} className="flex h-full w-full items-center justify-center">
+        <div id={`ad-${slot ?? placement}`} className="absolute inset-0 flex h-full w-full items-center justify-center">
           {provider === 'adsense' && (
             <ins
               className="adsbygoogle"
@@ -110,24 +122,18 @@ export default function AdSlot({ slot, placement: placementProp, className = '' 
             // 쿠팡 파트너스 다이내믹 배너 공식 iframe 태그 형식(파트너스 코드 → iframe 태그)
             <iframe
               title="쿠팡 파트너스"
-              src={`https://ads-partners.coupang.com/widgets.html?id=${encodeURIComponent(unit)}&template=carousel&trackingCode=${encodeURIComponent(adConfig.coupangTrackingCode)}&subId=&width=${size.w}&height=${size.h}&tsource=`}
-              width={size.w}
-              height={size.h}
+              src={`https://ads-partners.coupang.com/widgets.html?id=${encodeURIComponent(unit)}&template=carousel&trackingCode=${encodeURIComponent(adConfig.coupangTrackingCode)}&subId=&width=${renderSize.w}&height=${renderSize.h}&tsource=`}
+              width={renderSize.w}
+              height={renderSize.h}
               frameBorder={0}
               scrolling="no"
               referrerPolicy="unsafe-url"
-              className="max-h-full max-w-full"
+              className="h-full w-full border-0"
             />
           )}
         </div>
       )}
 
-      {useNetwork && provider === 'coupang' && (
-        // 쿠팡 파트너스 필수 경제적 이해관계 표시(공정위 추천·보증 심사지침). 없으면 최종승인 반려 사유
-        <p className="pointer-events-none absolute inset-x-0 bottom-0 bg-white/85 px-2 py-0.5 text-center text-[10px] leading-tight text-[#888] dark:bg-[#111827]/85">
-          이 광고는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
-        </p>
-      )}
 
       {hasHouse && (
         <a href={house.url} target="_blank" rel="sponsored noopener" className="flex h-full w-full flex-col justify-center gap-1 bg-[#F3EEFE] px-5 dark:bg-[#2A1366]/40">
@@ -143,6 +149,12 @@ export default function AdSlot({ slot, placement: placementProp, className = '' 
             {name} · {size.w}×{size.h}
           </span>
         </div>
+      )}
+      </div>
+      {useNetwork && provider === 'coupang' && (
+        <p className="px-2 py-1 text-center text-[10px] leading-snug text-[#888]">
+          이 광고는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+        </p>
       )}
 
       <span className="pointer-events-none absolute right-1.5 top-1.5 rounded bg-black/35 px-1.5 py-[1px] text-[10px] font-medium text-white">광고</span>

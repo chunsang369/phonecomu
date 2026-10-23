@@ -1,0 +1,9 @@
+[Unit]
+Description=Check scheduled reviewed publications every five seconds
+[Timer]
+OnBootSec=5s
+OnUnitInactiveSec=5s
+AccuracySec=1s
+Unit=phone-community-publish.service
+[Install]
+WantedBy=timers.target

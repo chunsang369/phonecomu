@@ -1,0 +1,10 @@
+[Unit]
+Description=One delayed retry of access-restricted community collection
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/phone-community-demo
+Environment=PHONE_DEMO=1
+Environment=PHONE_DEMO_DB=/var/lib/phone-community-demo/community.sqlite
+Environment=PHONE_PYTHON=/opt/phone-community-demo/.venv/bin/python
+ExecStart=/usr/bin/flock -n /var/lib/phone-community-demo/collection-retry.lock /usr/bin/node demo/retry-collection.mjs
+TimeoutStartSec=7min

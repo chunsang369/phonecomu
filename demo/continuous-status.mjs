@@ -1,0 +1,3 @@
+import {rows,setting} from '../src/lib/demo/runtime.mjs'
+import {spawnSync} from 'node:child_process'
+console.log(JSON.stringify({at:new Date().toISOString(),worker:setting('rewriteWorker',null),provider:setting('rewriteProvider:gemini',null),rewrites:rows('SELECT model,status,count(*) count FROM rewrites GROUP BY model,status'),recentRuns:rows("SELECT id,started_at,status,details FROM runs WHERE kind='gemini-batch' ORDER BY started_at DESC LIMIT 3").map(r=>({...r,details:JSON.parse(r.details)})),postgres:spawnSync('runuser',['-u','postgres','--','psql','-X','-q','-t','-A','-d','phonecommunity','-c',"SELECT json_build_object('published',count(*),'latest',max(published_at)) FROM community_rewrite_provenance"],{encoding:'utf8'}).stdout.trim()},null,2))

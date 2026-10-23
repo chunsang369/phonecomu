@@ -13,6 +13,7 @@ export default function WriteButton({ boardSlug, isLoggedIn, className }: WriteB
   const router = useRouter()
 
   const handleWriteClick = (e: React.MouseEvent) => {
+    if(process.env.NEXT_PUBLIC_PHONE_DEMO==='1'){router.push(`/demo/write?board=${boardSlug}`);return}
     if (!isLoggedIn) {
       e.preventDefault()
       alert('로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.')

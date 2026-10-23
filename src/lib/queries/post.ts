@@ -1,4 +1,6 @@
 import { one, q } from '@/lib/db'
+import { isDemo } from '@/lib/demo/runtime.mjs'
+import { demoPosts, demoPost, demoBoards, type Filters } from '@/lib/demo/queries'
 
 export type PostAuthor = { id: string; username: string; display_name: string; avatar_url: string | null; level: number }
 export type PostRow = {
@@ -37,6 +39,7 @@ const POST_SELECT = `
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
 
 export async function getPostsByBoard(boardId: number, limit: number = 20) {
+  if (isDemo()) return demoPosts(boardId,1,limit).posts
   try {
     return await q<PostRow>(
       `${POST_SELECT} where p.board_id = $1 and p.status = 'published'
@@ -49,7 +52,8 @@ export async function getPostsByBoard(boardId: number, limit: number = 20) {
   }
 }
 
-export async function getPaginatedPostsByBoard(boardId: number, page: number = 1, pageSize: number = 15) {
+export async function getPaginatedPostsByBoard(boardId: number, page: number = 1, pageSize: number = 15, filters: Filters = {}) {
+  if (isDemo()) return demoPosts(boardId,page,pageSize,filters)
   try {
     const offset = Math.max(page - 1, 0) * pageSize
     const [posts, count] = await Promise.all([
@@ -69,6 +73,7 @@ export async function getPaginatedPostsByBoard(boardId: number, page: number = 1
 
 /** 상세 조회. raw_author_id 는 서버에서 소유자 확인용으로만 사용한다. */
 export async function getPostDetail(postId: string) {
+  if (isDemo()) return demoPost(postId)
   if (!isUuid(postId)) return null
   try {
     return await one<PostRow & { raw_author_id: string | null }>(
@@ -83,6 +88,7 @@ export async function getPostDetail(postId: string) {
 
 /** 최근 24시간 추천·조회 상위 5개, 부족하면 전체 기간 추천순으로 채움 */
 export async function getPopularPosts24h() {
+  if (isDemo()) return demoPosts(undefined,1,5,{sort:'popular'}).posts.map(p=>({id:p.id,title:p.title,comments:p.comment_count,boardSlug:demoBoards().find(b=>b.id===p.board_id)!.slug}))
   try {
     const rows = await q<{ id: string; title: string; comment_count: number; slug: string }>(
       `(select p.id, p.title, p.comment_count, b.slug, 0 as pri, p.upvotes, p.view_count
@@ -109,6 +115,7 @@ export async function getPopularPosts24h() {
 
 /** 인기글 (Supabase trending_posts RPC 대체): 최근 N일 참여도 = 추천*3 + 댓글*2 + 조회*0.05 */
 export async function getTrendingPosts(days = 7, maxRows = 10) {
+  if (isDemo()) return demoPosts(undefined,1,maxRows,{sort:'popular'}).posts.map(p=>({id:p.id,title:p.title,board_id:p.board_id,score:p.upvotes*3+p.comment_count*2}))
   try {
     return await q<{ id: string; title: string; board_id: number; score: number }>(
       `select p.id, p.title, p.board_id, (p.upvotes * 3 + p.comment_count * 2 + p.view_count * 0.05)::float as score

@@ -1,7 +1,10 @@
 import { q } from '@/lib/db'
+import { isDemo } from '@/lib/demo/runtime.mjs'
+import { demoPosts } from '@/lib/demo/queries'
 
 /** 제목·본문 부분일치 검색 (한국어는 형태소 분리가 없어 FTS보다 ILIKE가 정확함). 공개 게시판만, 최근 50건 */
 export async function searchPosts(queryText: string) {
+  if (isDemo()) return queryText.trim() ? demoPosts(undefined,1,50,{q:queryText}).posts : []
   const term = queryText.trim()
   if (!term) return []
   const like = `%${term.replace(/[\\%_]/g, (m) => '\\' + m)}%`

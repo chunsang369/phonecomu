@@ -1,5 +1,7 @@
 import { q } from '@/lib/db'
 import { getCurrentProfile } from '@/lib/auth/session'
+import { isDemo, rows } from '@/lib/demo/runtime.mjs'
+import { demoComments } from '@/lib/demo/queries'
 
 type CommentRow = {
   id: string
@@ -20,6 +22,7 @@ type CommentRow = {
 
 /** 홈 '새댓글' 목록: 공개 게시판의 공개 댓글 최신순 (비밀댓글 제외) */
 export async function getRecentComments(limit = 8) {
+  if (isDemo()) return rows("SELECT c.id,c.content,c.created_at,c.post_id,b.slug board_slug FROM comments c JOIN posts p ON p.id=c.post_id JOIN boards b ON b.id=p.board_id WHERE p.status='published' AND c.status='published' ORDER BY c.created_at DESC LIMIT ?",[limit]) as unknown as {id:string;content:string;created_at:string;post_id:string;board_slug:string}[]
   try {
     return await q<{ id: string; content: string; created_at: string; post_id: string; board_slug: string }>(
       `select c.id, c.content, c.created_at, c.post_id, b.slug as board_slug
@@ -37,6 +40,7 @@ export async function getRecentComments(limit = 8) {
 }
 
 export async function getCommentsForPost(postId: string) {
+  if (isDemo()) return demoComments(postId)
   let comments: CommentRow[]
   try {
     comments = await q<CommentRow>(

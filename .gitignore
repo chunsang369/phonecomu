@@ -12,9 +12,18 @@
 
 # testing
 /coverage
+/.demo/
+/.next-demo/
 
 # next.js
 /.next/
+/.next-preview-20261023/
+/.next-deploy-check/
+/.next-preview-20261024/
+**/__pycache__/
+*.pyc
+/tmp/
+/output/
 /out/
 
 # production
@@ -37,6 +46,7 @@ yarn-error.log*
 .vercel
 
 # typescript
+/.next-shared-preview/
 *.tsbuildinfo
 next-env.d.ts
 

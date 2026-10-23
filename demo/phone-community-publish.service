@@ -1,0 +1,9 @@
+[Unit]
+Description=Release reviewed phone-community posts to shared PostgreSQL
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/phone-community-demo
+Environment=PHONE_DEMO=1
+Environment=PHONE_DEMO_DB=/var/lib/phone-community-demo/community.sqlite
+ExecStart=/usr/bin/flock -n /var/lib/phone-community-demo/publish.lock /usr/bin/node demo/publish-reviewed.mjs
+TimeoutStartSec=120

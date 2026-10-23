@@ -1,4 +1,6 @@
 import { one, q } from '@/lib/db'
+import { isDemo } from '@/lib/demo/runtime.mjs'
+import { demoStores,demoStoreReviews } from '@/lib/demo/seongji'
 
 export type StoreSummary = {
   id: string
@@ -72,6 +74,7 @@ export type StoreSort = 'score' | 'reviews' | 'recent'
 
 /** 지역별 성지 목록 + 평가 집계 */
 export async function listStores(region?: string, sort: StoreSort = 'score') {
+  if(isDemo())return demoStores().filter(s=>!region||s.region===region).sort((a,b)=>sort==='reviews'?b.review_count-a.review_count:sort==='recent'?String(b.last_review_at).localeCompare(String(a.last_review_at)):(b.avg_total||0)-(a.avg_total||0))
   const order =
     sort === 'reviews'
       ? 'review_count desc, avg_total desc nulls last'
@@ -91,6 +94,7 @@ export async function listStores(region?: string, sort: StoreSort = 'score') {
 }
 
 export async function getStore(id: string) {
+  if(isDemo())return demoStores().find(s=>s.id===id)||null
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null
   try {
     return await one<StoreSummary>(`${SUMMARY_SELECT} and s.id = $1 group by s.id`, [id])
@@ -108,6 +112,7 @@ const REVIEW_SELECT = `
    where r.status = 'published'`
 
 export async function getStoreReviews(storeId: string) {
+  if(isDemo())return demoStoreReviews().filter(r=>r.store_id===storeId)
   try {
     return await q<StoreReview>(`${REVIEW_SELECT} and r.store_id = $1 order by r.created_at desc limit 200`, [storeId])
   } catch {
@@ -116,6 +121,7 @@ export async function getStoreReviews(storeId: string) {
 }
 
 export async function getRecentReviews(limit = 10, region?: string) {
+  if(isDemo())return demoStoreReviews().filter(r=>!region||r.store_region===region).slice(0,limit)
   try {
     return await q<StoreReview>(
       `${REVIEW_SELECT} ${region ? 'and s.region = $2' : ''} order by r.created_at desc limit $1`,
@@ -128,6 +134,7 @@ export async function getRecentReviews(limit = 10, region?: string) {
 
 /** 기종별 최근 실구매가 (후기 기준, 최근 60일) — 시세 참고용 */
 export async function getDevicePriceBoard(region?: string) {
+  if(isDemo())return demoStoreReviews().filter(r=>!region||r.store_region===region).slice(0,12).map(r=>({device_name:r.device_name,carrier:r.carrier,n:1,min_real:r.real_price,avg_real:r.real_price,last_at:r.created_at}))
   try {
     return await q<{ device_name: string; carrier: string; n: number; min_real: number; avg_real: number; last_at: string }>(
       `select r.device_name, r.carrier, count(*)::int as n, min(r.real_price)::int as min_real,
@@ -145,6 +152,7 @@ export async function getDevicePriceBoard(region?: string) {
 
 /** 후기 작성 폼: 지역 내 기존 매장 */
 export async function getStoresInRegion(region: string) {
+  if(isDemo())return demoStores().filter(s=>s.region===region).map(s=>({id:s.id,alias:s.alias,district:s.district}))
   try {
     return await q<{ id: string; alias: string; district: string }>(
       "select id, alias, district from stores where region = $1 and status = 'active' order by district, alias limit 300",

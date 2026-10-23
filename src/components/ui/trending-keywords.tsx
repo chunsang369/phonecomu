@@ -1,4 +1,4 @@
-import { getAllBoards } from '@/lib/queries/board'
+import { getAllBoards, type Board } from '@/lib/queries/board'
 import { getTrendingPosts } from '@/lib/queries/post'
 import KeywordRoller from '@/components/ui/keyword-roller'
 
@@ -14,7 +14,7 @@ export default async function TrendingKeywords() {
 
   if (!trending || trending.length === 0) return null
 
-  const boardMap = new Map(boards.map((b) => [b.id, b]))
+  const boardMap = new Map<number,Board>(boards.map((b) => [b.id, b]))
   const items = trending.map((t) => ({
     title: t.title,
     href: `/board/${boardMap.get(t.board_id)?.slug ?? 'free'}/${t.id}`,

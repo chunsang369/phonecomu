@@ -9,6 +9,7 @@ const LEVEL_MIN: Record<number, number> = { 1: 0, 2: 100, 3: 500, 4: 2000, 5: 10
 
 /** 우측 상단 로그인/프로필 카드 (아이보스 우측 카드: 360폭, 로그인 버튼 42px 보라) — 홈·게시판·글상세 공용 */
 export default async function ProfileCard() {
+  if(process.env.PHONE_DEMO==='1')return <section className="rounded-lg bg-white p-5 dark:bg-[#111827]"><p className="text-xs font-semibold text-[#5707EB]">PHONE COMMUNITY</p><h2 className="mt-2 text-lg font-bold">내게 맞는 휴대폰 찾기</h2><p className="mt-2 text-sm leading-6 text-slate-500">지역과 통신사 조건을 맞춰 비교하고, 궁금한 점은 질문답변에서 확인하세요.</p><Link href="/calculator" className="mt-4 block rounded-lg bg-[#5707EB] px-4 py-3 text-center text-sm font-semibold text-white">요금계산기로 비교하기</Link><div className="mt-3 flex justify-between text-xs text-slate-500"><Link href="/demo/write?board=qna">질문 작성 →</Link></div></section>
   const profile = await getCurrentProfile()
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || '폰커뮤니티'
 

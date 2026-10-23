@@ -1,4 +1,6 @@
 import { one, q } from '@/lib/db'
+import { isDemo } from '@/lib/demo/runtime.mjs'
+import { demoPosts,demoProfile } from '@/lib/demo/queries'
 
 export type PublicProfile = {
   id: string
@@ -15,6 +17,7 @@ export type AuthorPost = { id: string; board_id: number; title: string; view_cou
 
 /** 공개 프로필 (민감 필드 제외) */
 export async function getPublicProfile(username: string) {
+  if (isDemo()) return demoProfile(username)
   try {
     return await one<PublicProfile>(
       `select id, username, display_name, avatar_url, role, level, adopted_count, trust_score, created_at
@@ -28,6 +31,7 @@ export async function getPublicProfile(username: string) {
 
 /** 해당 회원의 공개 작성글 — 익명글과 비공개 게시판(문의 등)은 제외 */
 export async function getPostsByAuthor(authorId: string, limit = 20) {
+  if (isDemo()) return demoPosts(undefined,1,limit,{},authorId).posts
   try {
     return await q<AuthorPost>(
       `select p.id, p.board_id, p.title, p.view_count, p.upvotes, p.comment_count, p.created_at

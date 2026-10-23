@@ -1,0 +1,8 @@
+[Unit]
+Description=Check the single thirty-minute collection retry
+[Timer]
+OnBootSec=60s
+OnUnitInactiveSec=60s
+AccuracySec=1s
+[Install]
+WantedBy=timers.target

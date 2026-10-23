@@ -1,0 +1,12 @@
+[Unit]
+Description=Collect community sources in four daily windows
+After=network-online.target
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/phone-community-demo
+Environment=PHONE_DEMO=1
+Environment=PHONE_DEMO_DB=/var/lib/phone-community-demo/community.sqlite
+Environment=PHONE_PYTHON=/opt/phone-community-demo/.venv/bin/python
+Environment=PHONE_COLLECTION_BATCH=1
+ExecStart=/usr/bin/flock -n /var/lib/phone-community-demo/batch.lock /usr/bin/node demo/collect-batch.mjs
+TimeoutStartSec=3h

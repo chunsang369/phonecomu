@@ -8,6 +8,8 @@
  *   여러 프로필로 호출해 합친 뒤 하루 단위로 캐시한다.
  */
 
+import { demoPlans } from '@/lib/demo/catalog.mjs';
+const demoCatalog = () => demoPlans.map(p=>({...p,carrier:p.carrier.replace(' ','') as Carrier,segment:'일반' as const,networks:['5G' as const]}));
 const ENDPOINT = 'https://www.smartchoice.or.kr/api/openAPI.xml';
 const DAY = 60 * 60 * 24;
 
@@ -92,6 +94,7 @@ let memo: { at: number; data: Promise<Catalog> } | null = null;
 
 /** 통신 3사 요금제 카탈로그(스마트초이스 추천 결과 합집합). 서버 메모리 + fetch 캐시로 하루 유지. */
 export function getPlanCatalog(): Promise<Catalog> {
+  if(process.env.PHONE_DEMO==='1')return Promise.resolve({plans:demoCatalog(),fetchedAt:new Date().toISOString()});
   if (memo && Date.now() - memo.at < DAY * 1000) return memo.data;
   const data = loadCatalog().then((c) => {
     if (c.error || !c.plans.length) memo = null; // 실패 결과는 캐시하지 않음
@@ -134,6 +137,7 @@ async function loadCatalog(): Promise<Catalog> {
 
 /** 사용량 기반 요금제 추천(실시간, 10분 캐시) */
 export async function recommendPlans(u: Usage): Promise<Recommendation[]> {
+  if(process.env.PHONE_DEMO==='1')return demoCatalog().map(p=>({...p,tier:'최적' as const}));
   const rows = await call(u, 600);
   return rows.map(({ plan, tier }) => ({ ...plan, tier }));
 }

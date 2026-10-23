@@ -1,0 +1,21 @@
+[Unit]
+Description=Phone community reference collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+DynamicUser=yes
+StateDirectory=phone-community-demo
+WorkingDirectory=/opt/phone-community-demo
+Environment=PHONE_DEMO=1
+Environment=PHONE_DEMO_DB=/var/lib/phone-community-demo/community.sqlite
+Environment=PHONE_PYTHON=/opt/phone-community-demo/.venv/bin/python
+ExecStartPre=/usr/bin/node demo/collector-init.mjs
+ExecStart=/usr/bin/node demo/worker.mjs --once
+TimeoutStartSec=240
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

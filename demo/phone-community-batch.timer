@@ -1,0 +1,10 @@
+[Unit]
+Description=Four randomized collection windows per day (KST)
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:00:00 Asia/Seoul
+RandomizedDelaySec=5h
+AccuracySec=1min
+Persistent=false
+Unit=phone-community-batch.service
+[Install]
+WantedBy=timers.target

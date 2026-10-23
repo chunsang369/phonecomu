@@ -1,0 +1,9 @@
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { boardDefinitions } from '@/lib/demo/catalog.mjs'
+export default function DemoWriteForm({board}:{board:string}) {
+  const router=useRouter(),[error,setError]=useState(''),[busy,setBusy]=useState(false)
+  const field='mt-2 w-full rounded-lg border bg-transparent p-3 text-sm'
+  return <form className="space-y-5 rounded-lg bg-white p-6 dark:bg-[#111827]" onSubmit={async e=>{e.preventDefault();const f=new FormData(e.currentTarget);setBusy(true);setError('');try{const r=await fetch('/api/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'post',boardId:Number(f.get('boardId')),title:f.get('title'),content:f.get('content')})});const j=await r.json();if(!r.ok)throw new Error(j.error);router.push(`/board/${j.slug}/${j.id}`)}catch(e){setError((e as Error).message);setBusy(false)}}}><h1 className="text-2xl font-bold">새 글 작성</h1><p className="text-sm text-slate-500">테스트 회원으로 로컬 시연 게시판에 작성합니다.</p><label className="block text-sm">게시판<select name="boardId" defaultValue={Math.max(1,boardDefinitions.findIndex(b=>b[0]===board)+1)} className={field}>{boardDefinitions.slice(0,7).map((b,i)=><option key={b[0]} value={i+1}>{b[1]}</option>)}</select></label><label className="block text-sm">제목<input name="title" minLength={5} maxLength={150} required className={field} placeholder="어떤 이야기를 나눌까요?"/></label><label className="block text-sm">본문<textarea name="content" rows={10} minLength={30} maxLength={12000} required className={field} placeholder="본문을 30자 이상 입력하세요."/></label><p role="alert" className="text-sm text-red-600">{error}</p><button disabled={busy} className="rounded-lg bg-[#5707EB] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">{busy?'저장 중…':'게시글 등록'}</button></form>
+}

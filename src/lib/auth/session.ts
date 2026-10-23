@@ -76,6 +76,7 @@ export async function destroySession() {
 
 /** 로그인한 회원 프로필 (요청당 1회 조회). 비로그인·만료·정지 계정은 null */
 export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
+  if (process.env.PHONE_DEMO === '1') return null
   const store = await cookies()
   const token = store.get(SESSION_COOKIE)?.value
   if (!token) return null

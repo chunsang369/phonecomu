@@ -1,0 +1,11 @@
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+export default function DemoPostTools({postId,comments}:{postId:string;comments:{id:string;content:string;parent_id:string|null;author_display_name:string}[]}) {
+  const router=useRouter(),[content,setContent]=useState(''),[parent,setParent]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false)
+  async function send(action:string) {
+    setBusy(true);setMessage('')
+    try {const r=await fetch('/api/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,postId,content,parentId:parent||null,value:1})});const j=await r.json();if(!r.ok)throw new Error(j.error);setMessage(action==='vote'?'추천을 반영했습니다.':'댓글을 등록했습니다.');if(action==='comment')setContent('');router.refresh()}catch(e){setMessage((e as Error).message)}finally{setBusy(false)}
+  }
+  return <section className="rounded-lg bg-white p-5 dark:bg-[#111827]"><div className="flex items-center justify-between"><h2 className="font-bold">댓글 {comments.length}</h2><button disabled={busy} onClick={()=>send('vote')} className="rounded-lg bg-[#EDE7FE] px-4 py-2 text-sm text-[#5707EB] disabled:opacity-50">추천 / 취소</button></div><div className="my-4">{comments.map(c=><article key={c.id} className={`border-b py-3 ${c.parent_id?'ml-5 border-l pl-3':''}`}><p className="text-xs font-semibold text-slate-500">{c.parent_id?'↳ ':''}{c.author_display_name}</p><p className="mt-1 whitespace-pre-wrap break-words text-sm">{c.content}</p><button className="mt-1 text-xs text-[#5707EB]" onClick={()=>setParent(c.id)}>답글</button></article>)}</div><form onSubmit={e=>{e.preventDefault();send('comment')}}><label className="text-sm">{parent?'대댓글 작성':'댓글 작성'}{parent&&<button type="button" onClick={()=>setParent('')} className="ml-2 text-xs underline">답글 취소</button>}<textarea required minLength={2} maxLength={500} value={content} onChange={e=>setContent(e.target.value)} className="mt-2 block w-full rounded-lg border bg-transparent p-3" rows={3}/></label><button disabled={busy} className="mt-2 rounded-lg bg-[#5707EB] px-4 py-2 text-sm text-white disabled:opacity-50">{busy?'처리 중…':'댓글 등록'}</button></form><p role="status" className="mt-2 text-sm text-[#5707EB]">{message}</p></section>
+}

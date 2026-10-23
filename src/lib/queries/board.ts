@@ -1,4 +1,6 @@
 import { q } from '@/lib/db'
+import { isDemo } from '@/lib/demo/runtime.mjs'
+import { demoBoards } from '@/lib/demo/queries'
 
 export type Board = {
   id: number
@@ -27,6 +29,7 @@ function loadBoards() {
 }
 
 export async function getBoardBySlug(slug: string) {
+  if (isDemo()) return demoBoards().find(b => b.slug === slug) || null
   try {
     return (await loadBoards()).find((b) => b.slug === slug) ?? null
   } catch (e) {
@@ -36,6 +39,7 @@ export async function getBoardBySlug(slug: string) {
 }
 
 export async function getAllBoards() {
+  if (isDemo()) return demoBoards()
   try {
     return [...(await loadBoards())] // 호출부가 정렬 등으로 캐시 배열을 바꾸지 않도록 복사본
   } catch (e) {
@@ -45,6 +49,7 @@ export async function getAllBoards() {
 }
 
 export async function getTopUsers(limit: number = 5) {
+  if (isDemo()) return []
   try {
     return await q(
       `select id, username, display_name, level, adopted_count, trust_score

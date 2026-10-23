@@ -5,6 +5,9 @@ from pathlib import Path
 spec=spec_from_file_location('parser',Path(__file__).with_name('fetch-public.py'))
 parser=module_from_spec(spec);spec.loader.exec_module(parser)
 class ParserTests(unittest.TestCase):
+    def test_preserves_breaks_and_blank_paragraphs_without_splitting_inline_words(self):
+        self.assertEqual(parser.plain('<p>첫 <b>문장</b>입니다.<br>둘째 줄</p><p><br></p><p>다음 문단</p>'),'첫 문장입니다.\n둘째 줄\n\n다음 문단')
+        self.assertEqual(parser.plain('첫 줄\n\n다음 줄'),'첫 줄\n\n다음 줄')
     def test_freeboards_are_explicitly_allowed_without_cross_board_fetches(self):
         self.assertTrue(parser.allowed('https://www.fmkorea.com/free','fmkorea-freeboard'))
         self.assertTrue(parser.allowed('https://www.ppomppu.co.kr/zboard/view.php?id=freeboard&no=123','ppomppu-freeboard'))

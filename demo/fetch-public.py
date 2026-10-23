@@ -2,7 +2,7 @@
 import json, sys, re, time
 from urllib.parse import urlparse, parse_qs, urljoin
 from datetime import datetime, timezone, timedelta
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString, Comment
 from curl_cffi import requests
 from fetch_audit import request as audited_request
 from source_images import collect_images,image_urls
@@ -19,10 +19,23 @@ def allowed(url,source):
  return source=='dcinside' and u.hostname=='gall.dcinside.com' and u.path in ['/board/lists/','/board/view/'] and q.get('id')==['cellularphone']
 
 def plain(node):
- if isinstance(node,str): node=BeautifulSoup(node,'html.parser')
- for x in node.select('script,style,iframe,form'): x.decompose()
- for br in node.select('br'): br.replace_with('\n')
- return re.sub(r'\n{3,}','\n\n',node.get_text('\n',strip=True)).strip()
+ if isinstance(node,str):
+  if not re.search(r'<[a-zA-Z][^>]*>',node):return re.sub(r'\n{3,}','\n\n',node.replace('\r\n','\n')).strip()
+  node=BeautifulSoup(node,'html.parser')
+ parts=[]
+ def walk(current):
+  if isinstance(current,Comment):return
+  if isinstance(current,NavigableString):
+   parts.append(re.sub(r'\s+',' ',str(current)));return
+  if current.name in ('script','style','iframe','form'):return
+  if current.name=='br':parts.append('\n');return
+  block=current.name in ('p','div','li','tr','h1','h2','h3','h4','blockquote')
+  if block and parts and not ''.join(parts).rstrip(' ').endswith('\n'):parts.append('\n')
+  for child in current.children:walk(child)
+  if block:parts.append('\n')
+ walk(node)
+ text=re.sub(r' *\n *','\n',''.join(parts))
+ return re.sub(r'\n{3,}','\n\n',text).strip()
 
 def number(text):
  m=re.search(r'\d[\d,]*',text);return int(m.group().replace(',','')) if m else 0

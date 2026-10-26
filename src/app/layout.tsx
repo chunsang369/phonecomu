@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   // canonical·og:url은 각 페이지에서 지정 (루트에 두면 모든 페이지가 홈을 가리킴)
   openGraph: { ...baseOpenGraph, type: "website" },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/phone-community-og.png"],
+  },
 };
 
 export default function RootLayout({

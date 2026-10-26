@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8f5ff"/>
+      <stop offset="1" stop-color="#eee7ff"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#721cff"/>
+      <stop offset="1" stop-color="#4d00d8"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#38206c" flood-opacity=".16"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1090" cy="60" r="190" fill="#e0d2ff" opacity=".6"/>
+  <circle cx="35" cy="590" r="190" fill="#e8ddff" opacity=".65"/>
+  <rect x="72" y="68" width="70" height="70" rx="22" fill="url(#card)"/>
+  <rect x="96" y="82" width="22" height="43" rx="6" fill="none" stroke="#fff" stroke-width="3.5"/>
+  <path d="M102 89h10" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="107" cy="117" r="1.8" fill="#fff"/>
+  <text x="162" y="116" fill="#26134d" font-family="Malgun Gothic, Arial, sans-serif" font-size="30" font-weight="700">성지평가제</text>
+  <text x="76" y="270" fill="#171126" font-family="Malgun Gothic, Arial, sans-serif" font-size="66" font-weight="800" letter-spacing="-2">휴대폰 구매 정보,</text>
+  <text x="76" y="355" fill="#171126" font-family="Malgun Gothic, Arial, sans-serif" font-size="66" font-weight="800" letter-spacing="-2">한눈에 비교하고 나누세요</text>
+  <text x="80" y="420" fill="#655b77" font-family="Malgun Gothic, Arial, sans-serif" font-size="28">시세 비교 · 실구매가 · 구매 후기 · 휴대폰 정보</text>
+  <g font-family="Malgun Gothic, Arial, sans-serif" font-size="21" font-weight="700">
+    <rect x="78" y="475" width="154" height="50" rx="25" fill="#fff"/>
+    <text x="155" y="508" text-anchor="middle" fill="#5707eb">시세 정보</text>
+    <rect x="246" y="475" width="154" height="50" rx="25" fill="#fff"/>
+    <text x="323" y="508" text-anchor="middle" fill="#5707eb">가격 비교</text>
+    <rect x="414" y="475" width="154" height="50" rx="25" fill="#fff"/>
+    <text x="491" y="508" text-anchor="middle" fill="#5707eb">구매 후기</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="846" y="116" width="258" height="430" rx="38" fill="#fff"/>
+    <rect x="864" y="136" width="222" height="390" rx="27" fill="#faf9fc"/>
+    <rect x="933" y="151" width="85" height="9" rx="4.5" fill="#ded9e8"/>
+    <rect x="886" y="190" width="178" height="105" rx="17" fill="url(#card)"/>
+    <text x="906" y="223" fill="#e8dcff" font-family="Malgun Gothic, Arial, sans-serif" font-size="15">오늘의 시세 비교</text>
+    <text x="906" y="265" fill="#fff" font-family="Arial, sans-serif" font-size="35" font-weight="700">S26</text>
+    <rect x="886" y="316" width="178" height="62" rx="14" fill="#fff" stroke="#e9e4f0"/>
+    <circle cx="910" cy="347" r="9" fill="#5707eb" opacity=".12"/>
+    <path d="m906 347 3 3 6-7" fill="none" stroke="#5707eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="930" y="353" fill="#342a42" font-family="Malgun Gothic, Arial, sans-serif" font-size="17">통신사별 가격</text>
+    <rect x="886" y="392" width="178" height="62" rx="14" fill="#fff" stroke="#e9e4f0"/>
+    <circle cx="910" cy="423" r="9" fill="#5707eb" opacity=".12"/>
+    <path d="m906 423 3 3 6-7" fill="none" stroke="#5707eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="930" y="429" fill="#342a42" font-family="Malgun Gothic, Arial, sans-serif" font-size="17">실구매 후기</text>
+    <rect x="886" y="468" width="178" height="38" rx="12" fill="#f0e9ff"/>
+    <path d="M905 488h17m-8-8v16" stroke="#5707eb" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="935" y="494" fill="#5707eb" font-family="Malgun Gothic, Arial, sans-serif" font-size="15" font-weight="700">커뮤니티 이야기</text>
+  </g>
+</svg>
